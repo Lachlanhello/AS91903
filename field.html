@@ -8,14 +8,19 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Barlow+Condensed:wght@600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to main content</a>
 
   <header class="site-header">
     <div class="header-inner">
-      <a class="brand" href="index.html"><span class="brand-mark" aria-hidden="true">⬤</span> Shot Put Field Tool</a>
+      <a class="brand" href="index.html">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2.5" fill="currentColor" stroke="none"/></svg>
+        </span>
+        Shot Put Field Tool
+      </a>
       <nav aria-label="Main navigation">
         <ul class="nav-list">
           <li><a href="index.html">Home</a></li>
@@ -29,6 +34,7 @@
 
   <main id="main">
     <h1>Field View</h1>
+    <div class="ruler-rule" aria-hidden="true"></div>
 
     <div class="view-toggle" role="group" aria-label="Switch view">
       <a href="field.html" class="toggle-btn is-active" aria-current="page">Field View</a>
@@ -49,17 +55,12 @@
             field.
           </desc>
 
-          <!-- Background -->
           <rect x="0" y="0" width="400" height="520" fill="#eef5ee" />
+          <rect x="30" y="95" width="340" height="385" rx="14" style="fill:var(--color-turf)" />
 
-          <!-- Turf -->
-          <rect x="30" y="95" width="340" height="385" rx="14" style="fill:var(--color-field)" />
-
-          <!-- Sector boundary lines -->
           <line x1="200" y1="454" x2="92" y2="110" stroke="#ffffff" stroke-width="2.5" />
           <line x1="200" y1="454" x2="308" y2="110" stroke="#ffffff" stroke-width="2.5" />
 
-          <!-- Distance arcs and labels -->
           <path d="M178,385 Q200,375 222,385" fill="none" stroke="#ffffff" stroke-width="2" />
           <text class="field-label" x="170" y="389" text-anchor="end">5 m</text>
 
@@ -75,16 +76,15 @@
           <path d="M92,110 Q200,92 308,110" fill="none" stroke="#ffffff" stroke-width="2" />
           <text class="field-label" x="84" y="114" text-anchor="end">25 m</text>
 
-          <!-- Throwing circle -->
           <circle cx="200" cy="480" r="26" fill="#256b32" stroke="#ffffff" stroke-width="2.5" />
           <rect x="185" y="450" width="30" height="6" rx="2" fill="#ffffff" />
           <text class="field-label" x="200" y="500" text-anchor="middle">Circle</text>
 
-          <!-- Landing marker (updated by JavaScript when a throw is recorded) -->
+          <line id="trail-line" class="trail-line" x1="200" y1="454" x2="200" y2="454" stroke-linecap="round" />
           <line id="landing-marker" x1="200" y1="454" x2="200" y2="454" stroke-linecap="round" />
           <text id="landing-label" x="210" y="454"></text>
+          <circle id="landing-pulse" class="landing-pulse" cx="200" cy="454" r="10" />
 
-          <!-- The shot: starts at the front of the circle and animates to the landing point -->
           <circle id="shot" cx="200" cy="454" r="7" />
         </svg>
       </section>
@@ -100,23 +100,27 @@
 
           <div class="field-group">
             <label for="distance-input">Throw distance (metres)</label>
-            <input
-              type="number"
-              id="distance-input"
-              name="distance"
-              step="0.01"
-              min="0"
-              inputmode="decimal"
-              aria-describedby="distance-hint distance-error"
-            >
-            <p id="distance-hint" class="hint">Enter a distance between 0.01 and 30 metres.</p>
+            <div class="distance-stepper">
+              <button type="button" id="distance-step-down" class="stepper-btn" aria-label="Decrease distance by 0.1 metres">−</button>
+              <input
+                type="number"
+                id="distance-input"
+                name="distance"
+                step="0.01"
+                min="0"
+                inputmode="decimal"
+                aria-describedby="distance-hint distance-error"
+              >
+              <button type="button" id="distance-step-up" class="stepper-btn" aria-label="Increase distance by 0.1 metres">+</button>
+            </div>
+            <p id="distance-hint" class="hint">Enter a distance between 0.01 and 30 metres, or use the buttons to adjust by 0.1 m.</p>
             <p id="distance-error" class="error-text" role="alert"></p>
           </div>
 
           <button type="submit" class="btn btn-primary">Record Throw</button>
         </form>
 
-        <p id="throw-result" class="throw-result" aria-live="polite">No throw recorded yet.</p>
+        <p id="throw-result" class="throw-result scoreboard" aria-live="polite">No throw recorded yet.</p>
       </section>
     </div>
   </main>
@@ -125,6 +129,6 @@
     <p>Shot Put Field Tool — built for athletes, coaches, teachers and spectators.</p>
   </footer>
 
-  <script src="js/app.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>

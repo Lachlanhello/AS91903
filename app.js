@@ -64,10 +64,14 @@ function initFieldView() {
 
   const nameInput = document.getElementById("athlete-name");
   const distanceInput = document.getElementById("distance-input");
+  const stepDown = document.getElementById("distance-step-down");
+  const stepUp = document.getElementById("distance-step-up");
   const errorEl = document.getElementById("distance-error");
   const resultEl = document.getElementById("throw-result");
   const shot = document.getElementById("shot");
+  const trailLine = document.getElementById("trail-line");
   const landingMarker = document.getElementById("landing-marker");
+  const landingPulse = document.getElementById("landing-pulse");
   const landingLabel = document.getElementById("landing-label");
 
   // Field geometry constants (must match the SVG in field.html).
@@ -110,6 +114,9 @@ function initFieldView() {
 
     shot.setAttribute("cy", y);
 
+    trailLine.setAttribute("y2", y);
+    trailLine.classList.add("is-visible");
+
     landingMarker.setAttribute("x1", 200 - halfWidth);
     landingMarker.setAttribute("x2", 200 + halfWidth);
     landingMarker.setAttribute("y1", y);
@@ -120,7 +127,27 @@ function initFieldView() {
     landingLabel.setAttribute("y", y + 4);
     landingLabel.textContent = formatDistance(distanceMetres);
     landingLabel.classList.add("is-visible");
+
+    // Small pulse ring at the landing point on top of the shot's own
+    // travel animation, timed to appear once it arrives.
+    window.setTimeout(() => {
+      landingPulse.setAttribute("cx", 200);
+      landingPulse.setAttribute("cy", y);
+      landingPulse.classList.remove("is-pulsing");
+      // Restart the CSS animation by forcing reflow before re-adding the class
+      void landingPulse.getBoundingClientRect();
+      landingPulse.classList.add("is-pulsing");
+    }, 850);
   }
+
+  function stepDistance(delta) {
+    const current = Number(distanceInput.value) || 0;
+    const next = Math.max(0, Math.round((current + delta) * 100) / 100);
+    distanceInput.value = next.toFixed(2);
+  }
+
+  if (stepDown) stepDown.addEventListener("click", () => stepDistance(-0.1));
+  if (stepUp) stepUp.addEventListener("click", () => stepDistance(0.1));
 
   form.addEventListener("submit", (event) => {
     event.preventDefault();
@@ -205,7 +232,15 @@ function initResultsView() {
       distCell.textContent = formatDistance(t.distance);
 
       const bestCell = document.createElement("td");
-      bestCell.textContent = isBest ? "★ Personal best" : "";
+      if (isBest) {
+        bestCell.innerHTML =
+          '<span class="best-tag"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" ' +
+          'fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+          '<path d="M8 21h8M12 17v4M7 4h10l-1 8a4 4 0 0 1-8 0L7 4Z"/>' +
+          '<path d="M7 6H4a3 3 0 0 0 3 5M17 6h3a3 3 0 0 1-3 5"/></svg>Personal best</span>';
+      } else {
+        bestCell.textContent = "";
+      }
 
       row.append(numCell, distCell, bestCell);
       tbody.appendChild(row);
