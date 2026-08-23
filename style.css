@@ -1,0 +1,438 @@
+/* =========================================================
+   Shot Put Field Tool — styles.css
+   Design tokens live at the top as CSS custom properties so
+   colour/type choices are defined once and reused everywhere.
+   ========================================================= */
+
+:root {
+  /* Colour: green field, white markings, warm amber accent
+     (measuring-tape gold) for anything interactive, dark ink
+     text for maximum contrast on the light background. */
+  --color-bg: #f6f9f6;
+  --color-surface: #ffffff;
+  --color-field: #2f7d3e;
+  --color-field-dark: #1e5c2b;
+  --color-ink: #14201a;
+  --color-ink-soft: #3c4b41;
+  --color-border: #cddad1;
+  --color-accent: #b8790f;      /* amber/gold - interactive elements */
+  --color-accent-dark: #8a5c0a;
+  --color-error: #a12b23;
+  --color-error-bg: #fbe9e7;
+  --color-focus: #1450a3;       /* strong blue, distinct from accent, for focus rings */
+
+  /* Type: three fonts total.
+     - Display: Barlow Condensed, scoreboard/stadium-signage feel for headings.
+     - Body: Atkinson Hyperlegible, designed for readability at low vision -
+       a deliberate accessibility-first choice, not a default.
+     - Mono: JetBrains Mono, for the distance readout (scoreboard digits,
+       tabular figures so numbers line up). */
+  --font-display: "Barlow Condensed", sans-serif;
+  --font-body: "Atkinson Hyperlegible", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+
+  --radius: 10px;
+  --max-width: 1000px;
+}
+
+/* ---------- Reset & base ---------- */
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 1.125rem;      /* 18px base, comfortably readable */
+  line-height: 1.6;
+  color: var(--color-ink);
+  background: var(--color-bg);
+}
+
+h1, h2, h3 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--color-field-dark);
+  letter-spacing: 0.01em;
+}
+
+h1 { font-size: clamp(2rem, 4vw, 2.75rem); margin: 0 0 0.5rem; }
+h2 { font-size: 1.5rem; margin: 0 0 0.75rem; }
+h3 { font-size: 1.15rem; margin: 0 0 0.5rem; }
+
+p { margin: 0 0 1rem; max-width: 65ch; }
+
+a { color: var(--color-accent-dark); }
+a:hover { color: var(--color-accent); }
+
+img, svg { max-width: 100%; height: auto; display: block; }
+
+/* Visually hide content but keep it available to screen readers */
+.visually-hidden {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Skip link: hidden until keyboard-focused, then jumps above the header */
+.skip-link {
+  position: absolute;
+  top: -3rem;
+  left: 0.5rem;
+  background: var(--color-focus);
+  color: #fff;
+  padding: 0.75rem 1.25rem;
+  border-radius: 0 0 var(--radius) var(--radius);
+  z-index: 100;
+  font-weight: 700;
+  transition: top 0.15s ease;
+}
+.skip-link:focus {
+  top: 0;
+}
+
+/* Consistent, highly visible focus state for every interactive element.
+   Using :focus-visible so mouse clicks don't show a ring, but keyboard
+   and assistive-tech focus always does. */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+.toggle-btn:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* ---------- Layout shell ---------- */
+.site-header {
+  background: var(--color-surface);
+  border-bottom: 3px solid var(--color-field);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.header-inner {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0.85rem 1.25rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--color-ink);
+  text-decoration: none;
+}
+.brand:hover { color: var(--color-field-dark); }
+.brand-mark {
+  color: var(--color-field);
+  font-size: 1.1rem;
+}
+
+.nav-list {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+}
+
+.nav-list a {
+  display: inline-block;
+  padding: 0.6rem 0.9rem;
+  border-radius: var(--radius);
+  text-decoration: none;
+  font-weight: 700;
+  color: var(--color-ink-soft);
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+
+.nav-list a:hover { background: var(--color-bg); color: var(--color-field-dark); }
+
+.nav-list a[aria-current="page"] {
+  background: var(--color-field);
+  color: #fff;
+}
+.nav-list a[aria-current="page"]:hover { color: #fff; }
+
+main {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 2rem 1.25rem 4rem;
+}
+
+.site-footer {
+  border-top: 1px solid var(--color-border);
+  margin-top: 3rem;
+  padding: 1.5rem 1.25rem;
+  text-align: center;
+  color: var(--color-ink-soft);
+  font-size: 0.95rem;
+}
+
+/* ---------- Reusable card ---------- */
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+/* ---------- View toggle (Field View / Results View) ---------- */
+.view-toggle {
+  display: inline-flex;
+  gap: 0.25rem;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  padding: 0.25rem;
+  margin: 0.5rem 0 1.75rem;
+}
+
+.toggle-btn {
+  padding: 0.6rem 1.25rem;
+  border-radius: 999px;
+  text-decoration: none;
+  font-weight: 700;
+  color: var(--color-ink-soft);
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.toggle-btn:hover { color: var(--color-field-dark); }
+
+.toggle-btn.is-active {
+  background: var(--color-accent);
+  color: #fff;
+}
+.toggle-btn.is-active:hover { color: #fff; }
+
+/* ---------- Buttons ---------- */
+.btn {
+  font-family: var(--font-body);
+  font-size: 1rem;
+  font-weight: 700;
+  padding: 0.8rem 1.5rem;
+  border-radius: var(--radius);
+  border: 2px solid transparent;
+  cursor: pointer;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.btn-primary {
+  background: var(--color-field);
+  color: #fff;
+}
+.btn-primary:hover { background: var(--color-field-dark); }
+
+.btn-secondary {
+  background: transparent;
+  border-color: var(--color-border);
+  color: var(--color-ink);
+}
+.btn-secondary:hover { border-color: var(--color-error); color: var(--color-error); }
+
+/* ---------- Forms ---------- */
+.field-group { margin-bottom: 1.25rem; }
+
+label {
+  display: block;
+  font-weight: 700;
+  margin-bottom: 0.35rem;
+}
+
+input[type="text"],
+input[type="number"] {
+  width: 100%;
+  font-family: var(--font-body);
+  font-size: 1.1rem;
+  padding: 0.7rem 0.8rem;
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  color: var(--color-ink);
+}
+
+input[aria-invalid="true"] {
+  border-color: var(--color-error);
+  background: var(--color-error-bg);
+}
+
+.hint {
+  font-size: 0.95rem;
+  color: var(--color-ink-soft);
+  margin: 0.35rem 0 0;
+}
+
+.error-text {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--color-error);
+  margin: 0.4rem 0 0;
+  min-height: 1.2em;
+}
+.error-text:empty { display: none; }
+
+/* ---------- Field View layout ---------- */
+.field-layout {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.field-panel { padding: 1rem; }
+
+.field-label { font-family: var(--font-mono); font-size: 11px; fill: var(--color-ink-soft); }
+
+#shot {
+  fill: #26282b;
+  stroke: #fff;
+  stroke-width: 1.5;
+  transition: cy 900ms cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+#landing-marker {
+  stroke: var(--color-accent);
+  stroke-width: 3;
+  opacity: 0;
+  transition: opacity 300ms ease, y1 900ms ease, y2 900ms ease;
+}
+#landing-marker.is-visible { opacity: 1; }
+
+#landing-label {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 15px;
+  fill: var(--color-accent-dark);
+  opacity: 0;
+  transition: opacity 300ms ease;
+}
+#landing-label.is-visible { opacity: 1; }
+
+.throw-result {
+  font-family: var(--font-mono);
+  font-size: 1.4rem;
+  font-weight: 700;
+  background: var(--color-bg);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 1rem;
+  margin-top: 1.25rem;
+  text-align: center;
+}
+.throw-result.is-recorded {
+  border-color: var(--color-field);
+  color: var(--color-field-dark);
+  background: #eaf4ec;
+}
+
+/* ---------- Results page ---------- */
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1rem;
+  margin: 0;
+}
+.summary-grid dt {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--color-ink-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.summary-grid dd {
+  margin: 0.2rem 0 0;
+  font-family: var(--font-mono);
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--color-field-dark);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1.25rem;
+}
+th, td {
+  text-align: left;
+  padding: 0.7rem 0.6rem;
+  border-bottom: 1px solid var(--color-border);
+  font-family: var(--font-mono);
+}
+th { font-family: var(--font-body); color: var(--color-ink-soft); font-size: 0.95rem; }
+tr.is-best td { font-weight: 700; }
+.best-tag {
+  display: inline-block;
+  margin-left: 0.4rem;
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  color: var(--color-accent-dark);
+}
+
+/* ---------- Home page link cards ---------- */
+.link-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.25rem;
+  margin: 1.75rem 0;
+}
+.link-card {
+  text-decoration: none;
+  color: var(--color-ink);
+  display: block;
+  border-top: 4px solid var(--color-field);
+}
+.link-card:hover { border-color: var(--color-accent); }
+.link-card h2 { margin-bottom: 0.4rem; }
+.link-card p { margin: 0; color: var(--color-ink-soft); }
+
+/* ---------- Guide page ---------- */
+.guide-section { margin-bottom: 1.25rem; }
+.guide-section ul, .guide-section ol { padding-left: 1.4rem; }
+.guide-section li { margin-bottom: 0.35rem; }
+
+/* ---------- Responsive ---------- */
+@media (max-width: 800px) {
+  .field-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 520px) {
+  .header-inner { flex-direction: column; align-items: flex-start; }
+  .nav-list { width: 100%; }
+  .nav-list a { flex: 1 1 auto; justify-content: center; text-align: center; }
+  h1 { font-size: 1.75rem; }
+}
+
+/* Respect users who have asked for reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  #shot, #landing-marker, #landing-label, .skip-link {
+    transition-duration: 0.01ms !important;
+  }
+}

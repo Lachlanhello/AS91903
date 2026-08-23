@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Results — Shot Put Field Tool</title>
+  <meta name="description" content="Clear, text-based shot put results: athlete name, throw number, distance and personal best.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Barlow+Condensed:wght@600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to main content</a>
+
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="index.html"><span class="brand-mark" aria-hidden="true">⬤</span> Shot Put Field Tool</a>
+      <nav aria-label="Main navigation">
+        <ul class="nav-list">
+          <li><a href="index.html">Home</a></li>
+          <li><a href="field.html">Field View</a></li>
+          <li><a href="results.html" aria-current="page">Results</a></li>
+          <li><a href="guide.html">Guide</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <h1>Results</h1>
+
+    <div class="view-toggle" role="group" aria-label="Switch view">
+      <a href="field.html" class="toggle-btn">Field View</a>
+      <a href="results.html" class="toggle-btn is-active" aria-current="page">Results View</a>
+    </div>
+
+    <p>
+      This page shows every recorded throw as plain text and numbers, so you
+      can see exactly what happened without needing to read the field
+      animation.
+    </p>
+
+    <section class="card" aria-labelledby="summary-heading">
+      <h2 id="summary-heading">Summary</h2>
+      <dl class="summary-grid">
+        <div>
+          <dt>Athlete</dt>
+          <dd id="summary-athlete">—</dd>
+        </div>
+        <div>
+          <dt>Throws recorded</dt>
+          <dd id="summary-count">0</dd>
+        </div>
+        <div>
+          <dt>Current throw</dt>
+          <dd id="summary-current">—</dd>
+        </div>
+        <div>
+          <dt>Personal best</dt>
+          <dd id="summary-best">—</dd>
+        </div>
+      </dl>
+    </section>
+
+    <section class="card" aria-labelledby="log-heading">
+      <h2 id="log-heading">Throw log</h2>
+
+      <table id="throw-table" hidden>
+        <caption class="visually-hidden">List of recorded throws in order, showing throw number and distance</caption>
+        <thead>
+          <tr>
+            <th scope="col">Throw #</th>
+            <th scope="col">Distance</th>
+            <th scope="col">Best</th>
+          </tr>
+        </thead>
+        <tbody id="throw-tbody"></tbody>
+      </table>
+
+      <p id="empty-state" class="hint">No throws recorded yet. Go to Field View to record your first throw.</p>
+
+      <button id="clear-throws" class="btn btn-secondary">Clear all throws</button>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>Shot Put Field Tool — built for athletes, coaches, teachers and spectators.</p>
+  </footer>
+
+  <script src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shot Put Field Tool</title>
+  <meta name="description" content="An easy-to-use, accessible shot put tool for athletes, coaches, teachers and spectators.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Barlow+Condensed:wght@600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to main content</a>
+
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="index.html"><span class="brand-mark" aria-hidden="true">⬤</span> Shot Put Field Tool</a>
+      <nav aria-label="Main navigation">
+        <ul class="nav-list">
+          <li><a href="index.html" aria-current="page">Home</a></li>
+          <li><a href="field.html">Field View</a></li>
+          <li><a href="results.html">Results</a></li>
+          <li><a href="guide.html">Guide</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <h1>Shot Put Field Tool</h1>
+    <p>
+      A simple digital tool for recording and understanding shot put throws.
+      It's built for athletes, coaches, teachers and spectators, and it's
+      designed to be easy to use for people with different abilities.
+    </p>
+
+    <div class="link-cards">
+      <a class="card link-card" href="field.html">
+        <h2>Field View</h2>
+        <p>Enter a throw distance and watch the shot travel across the field.</p>
+      </a>
+      <a class="card link-card" href="results.html">
+        <h2>Results</h2>
+        <p>Clear, text-based results: throw number, distance and personal best.</p>
+      </a>
+      <a class="card link-card" href="guide.html">
+        <h2>Guide</h2>
+        <p>How to use the tool, what the distance means, and accessibility help.</p>
+      </a>
+    </div>
+
+    <section class="card" aria-labelledby="about-heading">
+      <h2 id="about-heading">About this tool</h2>
+      <p>
+        The Field View shows a visual diagram of the throwing circle and
+        distance markers, with an animation of the shot travelling to where
+        it landed. Everything shown in the animation is also given in plain
+        text, so the tool works whether or not you can see or interpret the
+        animation.
+      </p>
+      <p>
+        The Results view is the quickest way to check exact numbers: athlete
+        name, throw number, distance and personal best, all as text.
+      </p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>Shot Put Field Tool — built for athletes, coaches, teachers and spectators.</p>
+  </footer>
+
+  <script src="js/app.js"></script>
+</body>
+</html>

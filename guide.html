@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Guide — Shot Put Field Tool</title>
+  <meta name="description" content="How to use the Shot Put Field Tool, what the distance means, and accessibility information.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Barlow+Condensed:wght@600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to main content</a>
+
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="index.html"><span class="brand-mark" aria-hidden="true">⬤</span> Shot Put Field Tool</a>
+      <nav aria-label="Main navigation">
+        <ul class="nav-list">
+          <li><a href="index.html">Home</a></li>
+          <li><a href="field.html">Field View</a></li>
+          <li><a href="results.html">Results</a></li>
+          <li><a href="guide.html" aria-current="page">Guide</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <h1>Guide &amp; Help</h1>
+    <p>Quick answers to how this tool works, and how it supports different needs.</p>
+
+    <section class="card guide-section" aria-labelledby="record-heading">
+      <h2 id="record-heading">How to record a throw</h2>
+      <ol>
+        <li>Go to <a href="field.html">Field View</a>.</li>
+        <li>Type the athlete's name (optional).</li>
+        <li>Type the throw distance in metres, e.g. <code>14.20</code>.</li>
+        <li>Select <strong>Record Throw</strong>.</li>
+        <li>The shot animates to the landing spot, and the exact distance appears as text below the field.</li>
+      </ol>
+    </section>
+
+    <section class="card guide-section" aria-labelledby="distance-heading">
+      <h2 id="distance-heading">What the distance means</h2>
+      <p>
+        The distance is how far the shot travelled from the front edge of
+        the throwing circle to where it landed, measured in metres. This
+        matches how distances are measured in real shot put competitions.
+      </p>
+    </section>
+
+    <section class="card guide-section" aria-labelledby="switch-heading">
+      <h2 id="switch-heading">Switching between views</h2>
+      <p>
+        Use the <strong>Field View / Results View</strong> toggle near the
+        top of either page, or the main navigation bar at the top of every
+        page. The current page is always shown clearly in both.
+      </p>
+    </section>
+
+    <section class="card guide-section" aria-labelledby="access-heading">
+      <h2 id="access-heading">Accessibility features in this tool</h2>
+      <ul>
+        <li>Every throw result is shown as plain text, not just as an animation.</li>
+        <li>High-contrast text and colours throughout.</li>
+        <li>Large, clearly labelled buttons and form fields.</li>
+        <li>Visible focus outlines for anyone navigating with a keyboard.</li>
+        <li>A "Skip to main content" link for keyboard and screen reader users.</li>
+        <li>Error messages describe exactly what to fix, not just "invalid".</li>
+        <li>Colour is never the only way information is shown — e.g. a personal best is also labelled "★ Personal best" in text.</li>
+      </ul>
+    </section>
+
+    <section class="card guide-section" aria-labelledby="basics-heading">
+      <h2 id="basics-heading">Shot put basics</h2>
+      <p>
+        In shot put, an athlete throws ("puts") a heavy metal ball from
+        inside a marked circle. The throw is measured from the front edge
+        of the circle to the point where the shot first lands, and the
+        furthest valid throw counts as the athlete's result.
+      </p>
+    </section>
+
+    <section class="card guide-section" aria-labelledby="audience-heading">
+      <h2 id="audience-heading">For coaches, athletes and spectators</h2>
+      <ul>
+        <li><strong>Athletes:</strong> use Field View to log throws during practice and track your personal best on the Results page.</li>
+        <li><strong>Coaches:</strong> use the Results page for a quick, readable summary during a session.</li>
+        <li><strong>Spectators:</strong> Field View gives a simple visual sense of distance, with the exact number always shown in text too.</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>Shot Put Field Tool — built for athletes, coaches, teachers and spectators.</p>
+  </footer>
+
+  <script src="js/app.js"></script>
+</body>
+</html>
