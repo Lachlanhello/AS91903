@@ -1,0 +1,12 @@
+{
+  "name": "as91903",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Accessible shot put field tool",
+  "scripts": {
+    "start": "live-server --open=index.html"
+  },
+  "devDependencies": {
+    "live-server": "^1.2.2"
+  }
+}
