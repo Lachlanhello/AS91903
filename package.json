@@ -1,12 +1,13 @@
 {
-  "name": "as91903",
+  "name": "shot-put-field-tool",
   "version": "1.0.0",
   "private": true,
-  "description": "Accessible shot put field tool",
+  "description": "An accessible shot put recording tool for athletes, coaches, teachers and spectators.",
+  "main": "server.js",
   "scripts": {
-    "start": "node app.js"
+    "start": "node server.js"
   },
-  "devDependencies": {
-    "express": "^5.1.0"
+  "dependencies": {
+    "express": "^4.19.2"
   }
 }
