@@ -25,6 +25,7 @@
 
   --color-clay: #c1541c;          /* decorative accent (borders, fills) */
   --color-clay-text: #9a3f14;     /* darker, contrast-safe for text */
+  --color-apron: #8a4a2e;         /* the paved run-up area around the circle */
 
   --color-focus: #2f6fed;
   --color-error: #a12b23;
@@ -372,24 +373,43 @@ input[aria-invalid="true"] { border-color: var(--color-error); background: var(-
 /* ---------- Field View layout ---------- */
 .field-layout { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 1.5rem; align-items: start; }
 
-.field-panel {
-  padding: 1.25rem;
-  border-top-color: var(--color-turf);
-  background: linear-gradient(180deg, #ffffff 0%, var(--color-turf-light) 100%);
+.field-panel { padding: 1.25rem; border-top-color: var(--color-turf); }
+
+.field-container {
+  position: relative;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  aspect-ratio: 640 / 380;
 }
+#field-svg { display: block; width: 100%; height: 100%; }
 
-.field-label { font-family: var(--font-mono); font-size: 11px; fill: var(--color-ink-soft); }
+/* Field graphic (built by buildField() in app.js) */
+.grass { fill: url(#grass-dots); }
+.apron { fill: var(--color-apron); }
+.sector-line { stroke: rgba(255, 255, 255, 0.85); stroke-width: 2; stroke-linecap: round; }
+.ring { fill: none; stroke: rgba(255, 255, 255, 0.55); stroke-width: 2; }
+.ring-far { stroke: var(--color-led); stroke-width: 2.5; }
+.ring-label { fill: rgba(255, 255, 255, 0.8); font-family: var(--font-mono); font-size: 14px; font-weight: 600; text-anchor: middle; }
+.ring-label-far { fill: var(--color-led); }
+.throw-circle { fill: var(--color-apron); stroke: #ffffff; stroke-width: 3; }
+.toe-line { stroke: #ffffff; stroke-width: 3; }
+.field-border { fill: none; stroke: rgba(255, 255, 255, 0.3); stroke-width: 1; }
 
-#shot { fill: #24282b; stroke: #fff; stroke-width: 1.5; transition: cy 900ms cubic-bezier(0.22, 0.61, 0.36, 1); }
+/* The flying / resting shot */
+#shot { stroke: rgba(20, 26, 20, 0.35); stroke-width: 1; }
+
+.shot-shadow { fill: rgba(18, 24, 26, 0.4); opacity: 0; }
 
 /* Trail line: traces the shot's path as it travels, so the motion
-   itself carries information rather than being purely decorative. */
+   itself carries information rather than being purely decorative.
+   It stays visible after landing as a record of the throw taken. */
 .trail-line {
   stroke: rgba(255, 255, 255, 0.65);
   stroke-width: 2;
   stroke-dasharray: 5 6;
   opacity: 0;
-  transition: y2 900ms cubic-bezier(0.22, 0.61, 0.36, 1), opacity 200ms ease;
+  transition: opacity 200ms ease;
 }
 .trail-line.is-visible { opacity: 1; }
 
@@ -401,20 +421,13 @@ input[aria-invalid="true"] { border-color: var(--color-error); background: var(-
   opacity: 0;
   transform-origin: center;
   transform-box: fill-box;
+  pointer-events: none;
 }
 .landing-pulse.is-pulsing { animation: landing-pulse 700ms ease-out; }
 @keyframes landing-pulse {
   0% { opacity: 0.9; transform: scale(0.4); }
-  100% { opacity: 0; transform: scale(2.2); }
+  100% { opacity: 0; transform: scale(3); }
 }
-
-#landing-marker {
-  stroke: var(--color-clay);
-  stroke-width: 3;
-  opacity: 0;
-  transition: opacity 300ms ease, y1 900ms ease, y2 900ms ease;
-}
-#landing-marker.is-visible { opacity: 1; }
 
 #landing-label {
   font-family: var(--font-mono);
@@ -549,7 +562,7 @@ tr.is-best td { font-weight: 700; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  #shot, #landing-marker, #landing-label, .trail-line, .skip-link, .link-card, .btn {
+  #landing-label, .trail-line, .skip-link, .link-card, .btn {
     transition-duration: 0.01ms !important;
   }
   .landing-pulse.is-pulsing { animation: none; opacity: 0.9; }

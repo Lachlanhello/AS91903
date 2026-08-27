@@ -39,13 +39,13 @@ Recorded throws and the athlete name are saved in the browser's local storage, s
 
 ### Option 2: Open the site directly
 
-Open `index.html` in a modern web browser. You can then use the navigation links to move between the Home, Field View, Results, and Guide pages.
+Open `views/index.html` in a modern web browser. You can then use the navigation links to move between the Home, Field View, Results, and Guide pages.
 
 ## Project Files
 
-- `index.html`: Home page
-- `field.html`: Throw entry and field view
-- `results.html`: Recorded results
-- `guide.html`: User guide
+- `views/index.html`: Home page
+- `views/field.html`: Throw entry and field view
+- `views/results.html`: Recorded results
+- `views/guide.html`: User guide
 - `app.js`: Throw storage, validation, animation, and results logic
-- `style.css`: Site styling and responsive layout
+- `public/css/style.css`: Site styling and responsive layout

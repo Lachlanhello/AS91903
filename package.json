@@ -4,9 +4,9 @@
   "private": true,
   "description": "Accessible shot put field tool",
   "scripts": {
-    "start": "live-server --open=index.html"
+    "start": "node app.js"
   },
   "devDependencies": {
-    "live-server": "^1.2.2"
+    "express": "^5.1.0"
   }
 }

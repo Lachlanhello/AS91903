@@ -2,8 +2,46 @@
    Shot Put Field Tool — app.js
    Handles: throw storage (shared between Field View and
    Results View via localStorage), input validation, the
-   field animation, and rendering the results table.
+   field diagram + throw animation, and the results table.
    ========================================================= */
+
+if (typeof module !== "undefined" && module.exports) {
+  const express = require("express");
+  const path = require("path");
+  const server = express();
+  const viewsDirectory = path.join(__dirname, "views");
+
+  server.use("/public", express.static(path.join(__dirname, "public")));
+
+  const routes = {
+    "/": "index.html",
+    "/field": "field.html",
+    "/field.html": "field.html",
+    "/results": "results.html",
+    "/results.html": "results.html",
+    "/guide": "guide.html",
+    "/guide.html": "guide.html"
+  };
+
+  Object.entries(routes).forEach(([route, view]) => {
+    server.get(route, (request, response) => {
+      response.sendFile(path.join(viewsDirectory, view));
+    });
+  });
+
+  server.get("/app.js", (request, response) => {
+    response.sendFile(__filename);
+  });
+
+  if (require.main === module) {
+    const port = process.env.PORT || 3000;
+    server.listen(port, () => {
+      console.log("Shot Put Field Tool running at http://localhost:" + port);
+    });
+  }
+
+  module.exports = server;
+}
 
 const STORAGE_KEY = "shotput_throws";
 const NAME_KEY = "shotput_athlete";
@@ -56,6 +94,110 @@ function formatDistance(value) {
   return value.toFixed(2) + " m";
 }
 
+/* =========================================================
+   Field geometry
+   Every distance <-> position conversion in this file (the
+   static rings, the flying shot, and the landing marker) is
+   worked out from this one FIELD object. That way the picture
+   and the maths can never disagree about where a distance sits.
+   The half-angle below (17.46°) is half of the real 34.92°
+   shot put sector used in competition.
+   ========================================================= */
+
+const FIELD = {
+  originX: 92,
+  originY: 190,
+  halfAngleDeg: 17.46,
+  maxDistance: 30,  // matches the validation limit further down
+  maxRadius: 460,   // pixels, chosen to fit the 640-wide viewBox
+};
+const SCALE = FIELD.maxRadius / FIELD.maxDistance; // pixels per metre
+const RING_DISTANCES = [5, 10, 15, 20, 25];
+const SVG_NS = "http://www.w3.org/2000/svg";
+
+function toRadians(degrees) {
+  return (degrees * Math.PI) / 180;
+}
+
+// A point at a given pixel radius and angle from the throwing circle.
+function pointAtRadius(radiusPx, angleDeg) {
+  const theta = toRadians(angleDeg);
+  return {
+    x: FIELD.originX + radiusPx * Math.cos(theta),
+    y: FIELD.originY + radiusPx * Math.sin(theta),
+  };
+}
+
+// The point that a given real-world distance and angle map to on screen.
+function fieldPoint(distanceMetres, angleDeg) {
+  return pointAtRadius(distanceMetres * SCALE, angleDeg);
+}
+
+// An SVG arc path for the ring at a given distance, spanning the sector.
+function ringPath(distanceMetres) {
+  const r = distanceMetres * SCALE;
+  const p1 = fieldPoint(distanceMetres, -FIELD.halfAngleDeg);
+  const p2 = fieldPoint(distanceMetres, FIELD.halfAngleDeg);
+  return "M " + p1.x.toFixed(1) + " " + p1.y.toFixed(1) +
+    " A " + r.toFixed(1) + " " + r.toFixed(1) + " 0 0 1 " +
+    p2.x.toFixed(1) + " " + p2.y.toFixed(1);
+}
+
+function svgEl(tag, attrs) {
+  const el = document.createElementNS(SVG_NS, tag);
+  Object.entries(attrs).forEach(([key, value]) => el.setAttribute(key, value));
+  return el;
+}
+
+// Draws the grass, apron, sector lines, distance rings and throwing
+// circle into the <g id="field-graphic"> placeholder in field.html.
+function buildField(graphic) {
+  graphic.innerHTML = "";
+
+  graphic.appendChild(svgEl("rect", { class: "grass", x: 0, y: 0, width: 640, height: 380 }));
+  graphic.appendChild(svgEl("rect", { class: "apron", x: 0, y: 0, width: FIELD.originX + 46, height: 380 }));
+
+  const edgeRadius = FIELD.maxRadius + 60;
+  [-FIELD.halfAngleDeg, FIELD.halfAngleDeg].forEach((angle) => {
+    const p = pointAtRadius(edgeRadius, angle);
+    graphic.appendChild(svgEl("line", {
+      class: "sector-line",
+      x1: FIELD.originX, y1: FIELD.originY,
+      x2: p.x.toFixed(1), y2: p.y.toFixed(1),
+    }));
+  });
+
+  RING_DISTANCES.forEach((distance, index) => {
+    const isFurthest = index === RING_DISTANCES.length - 1;
+    graphic.appendChild(svgEl("path", {
+      class: isFurthest ? "ring ring-far" : "ring",
+      d: ringPath(distance),
+    }));
+    const labelPoint = fieldPoint(distance, 0);
+    const label = svgEl("text", {
+      class: isFurthest ? "ring-label ring-label-far" : "ring-label",
+      x: labelPoint.x.toFixed(1),
+      y: (FIELD.originY - 10).toFixed(1),
+    });
+    label.textContent = distance + " m";
+    graphic.appendChild(label);
+  });
+
+  graphic.appendChild(svgEl("circle", {
+    class: "throw-circle",
+    cx: FIELD.originX, cy: FIELD.originY, r: 24,
+  }));
+  graphic.appendChild(svgEl("line", {
+    class: "toe-line",
+    x1: FIELD.originX, y1: FIELD.originY - 24,
+    x2: FIELD.originX, y2: FIELD.originY + 24,
+  }));
+  graphic.appendChild(svgEl("rect", {
+    class: "field-border",
+    x: 2, y: 2, width: 636, height: 376, rx: 16,
+  }));
+}
+
 /* ---------- Field View ---------- */
 
 function initFieldView() {
@@ -68,33 +210,42 @@ function initFieldView() {
   const stepUp = document.getElementById("distance-step-up");
   const errorEl = document.getElementById("distance-error");
   const resultEl = document.getElementById("throw-result");
+
+  const fieldGraphic = document.getElementById("field-graphic");
   const shot = document.getElementById("shot");
+  const shotShadow = document.getElementById("shot-shadow");
   const trailLine = document.getElementById("trail-line");
-  const landingMarker = document.getElementById("landing-marker");
   const landingPulse = document.getElementById("landing-pulse");
   const landingLabel = document.getElementById("landing-label");
 
-  // Field geometry constants (must match the SVG in field.html).
-  // Distance 0 sits at the front of the throwing circle; distance
-  // 25m sits at the top edge of the field diagram.
-  const CIRCLE_FRONT_Y = 454;
-  const FIELD_TOP_Y = 110;
-  const MAX_VISUAL_METRES = 25;
-  const PX_PER_METRE = (CIRCLE_FRONT_Y - FIELD_TOP_Y) / MAX_VISUAL_METRES;
-  const SECTOR_HALF_ANGLE_TAN = 0.314; // approximates the real 34.92 degree sector
+  buildField(fieldGraphic);
+
+  const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   // Restore saved athlete name
   nameInput.value = getAthleteName();
   nameInput.addEventListener("input", () => setAthleteName(nameInput.value.trim()));
 
-  function sectorWidthAt(y) {
-    const distFromCircle = CIRCLE_FRONT_Y - y;
-    return distFromCircle * SECTOR_HALF_ANGLE_TAN;
+  function positionAtOrigin() {
+    shot.setAttribute("cx", FIELD.originX);
+    shot.setAttribute("cy", FIELD.originY);
+    shotShadow.setAttribute("cx", FIELD.originX);
+    shotShadow.setAttribute("cy", FIELD.originY);
+    trailLine.setAttribute("x1", FIELD.originX);
+    trailLine.setAttribute("y1", FIELD.originY);
+    trailLine.setAttribute("x2", FIELD.originX);
+    trailLine.setAttribute("y2", FIELD.originY);
   }
+  positionAtOrigin();
 
-  function landingY(distanceMetres) {
-    const clamped = Math.min(distanceMetres, MAX_VISUAL_METRES);
-    return CIRCLE_FRONT_Y - clamped * PX_PER_METRE;
+  // A small random angle within the legal sector, used purely so the
+  // shot doesn't land in exactly the same spot every time. It never
+  // changes the distance value - that always comes from what the user
+  // typed, and is always shown as exact text regardless of the angle.
+  function randomAngle() {
+    const margin = 2;
+    const limit = FIELD.halfAngleDeg - margin;
+    return (Math.random() * 2 - 1) * limit;
   }
 
   function showError(message) {
@@ -108,36 +259,90 @@ function initFieldView() {
     distanceInput.removeAttribute("aria-invalid");
   }
 
-  function animateThrow(distanceMetres) {
-    const y = landingY(distanceMetres);
-    const halfWidth = sectorWidthAt(y);
+  function showLandingPulse(point) {
+    landingPulse.setAttribute("cx", point.x.toFixed(1));
+    landingPulse.setAttribute("cy", point.y.toFixed(1));
+    landingPulse.classList.remove("is-pulsing");
+    void landingPulse.getBoundingClientRect(); // restart the CSS animation
+    landingPulse.classList.add("is-pulsing");
+  }
 
-    shot.setAttribute("cy", y);
+  function finishThrow(distance, point) {
+    shot.setAttribute("cx", point.x.toFixed(1));
+    shot.setAttribute("cy", point.y.toFixed(1));
+    shot.setAttribute("r", 9);
 
-    trailLine.setAttribute("y2", y);
+    shotShadow.setAttribute("cx", point.x.toFixed(1));
+    shotShadow.setAttribute("cy", point.y.toFixed(1));
+    shotShadow.setAttribute("rx", 8);
+    shotShadow.setAttribute("ry", 4);
+    shotShadow.style.opacity = "0.45";
+
+    trailLine.setAttribute("x2", point.x.toFixed(1));
+    trailLine.setAttribute("y2", point.y.toFixed(1));
     trailLine.classList.add("is-visible");
 
-    landingMarker.setAttribute("x1", 200 - halfWidth);
-    landingMarker.setAttribute("x2", 200 + halfWidth);
-    landingMarker.setAttribute("y1", y);
-    landingMarker.setAttribute("y2", y);
-    landingMarker.classList.add("is-visible");
-
-    landingLabel.setAttribute("x", 200 + halfWidth + 8);
-    landingLabel.setAttribute("y", y + 4);
-    landingLabel.textContent = formatDistance(distanceMetres);
+    landingLabel.setAttribute("x", (point.x + 12).toFixed(1));
+    landingLabel.setAttribute("y", (point.y + 4).toFixed(1));
+    landingLabel.textContent = formatDistance(distance);
     landingLabel.classList.add("is-visible");
 
-    // Small pulse ring at the landing point on top of the shot's own
-    // travel animation, timed to appear once it arrives.
-    window.setTimeout(() => {
-      landingPulse.setAttribute("cx", 200);
-      landingPulse.setAttribute("cy", y);
-      landingPulse.classList.remove("is-pulsing");
-      // Restart the CSS animation by forcing reflow before re-adding the class
-      void landingPulse.getBoundingClientRect();
-      landingPulse.classList.add("is-pulsing");
-    }, 850);
+    showLandingPulse(point);
+
+    addThrow(distance);
+    const best = getBest(getThrows());
+    const isNewBest = Boolean(best) && best.distance === distance;
+
+    resultEl.textContent = "Throw recorded: " + formatDistance(distance) +
+      (isNewBest ? " — new personal best!" : "");
+    resultEl.classList.add("is-recorded");
+  }
+
+  function animateThrow(distance) {
+    const angle = randomAngle();
+    const targetPoint = fieldPoint(distance, angle);
+
+    // Respect the person's reduced-motion preference: skip the moving
+    // animation entirely and go straight to the result.
+    if (prefersReducedMotion) {
+      finishThrow(distance, targetPoint);
+      return;
+    }
+
+    const duration = Math.min(1600, 750 + distance * 26);
+    let start = null;
+
+    function frame(timestamp) {
+      if (!start) start = timestamp;
+      const progress = Math.min((timestamp - start) / duration, 1);
+      const distanceSoFar = distance * progress;
+      const point = fieldPoint(distanceSoFar, angle);
+      // A small parabolic "hop" used only for the visual height of the
+      // ball and its shadow - it has no effect on the measured distance.
+      const hop = 4 * progress * (1 - progress);
+
+      shot.setAttribute("cx", point.x.toFixed(1));
+      shot.setAttribute("cy", point.y.toFixed(1));
+      shot.setAttribute("r", (9 + hop * 6).toFixed(1));
+
+      shotShadow.setAttribute("cx", point.x.toFixed(1));
+      shotShadow.setAttribute("cy", point.y.toFixed(1));
+      shotShadow.setAttribute("rx", (8 - hop * 3).toFixed(1));
+      shotShadow.setAttribute("ry", (4 - hop * 1.5).toFixed(1));
+      shotShadow.style.opacity = (0.45 - hop * 0.25).toFixed(2);
+
+      trailLine.setAttribute("x2", point.x.toFixed(1));
+      trailLine.setAttribute("y2", point.y.toFixed(1));
+      trailLine.classList.add("is-visible");
+
+      if (progress < 1) {
+        requestAnimationFrame(frame);
+      } else {
+        finishThrow(distance, targetPoint);
+      }
+    }
+
+    requestAnimationFrame(frame);
   }
 
   function stepDistance(delta) {
@@ -170,16 +375,12 @@ function initFieldView() {
       showError("Enter a distance greater than 0 metres.");
       return;
     }
-    if (distance > 30) {
-      showError("Enter a realistic distance of 30 metres or less.");
+    if (distance > FIELD.maxDistance) {
+      showError("Enter a realistic distance of " + FIELD.maxDistance + " metres or less.");
       return;
     }
 
     animateThrow(distance);
-    addThrow(distance);
-
-    resultEl.textContent = "Throw recorded: " + formatDistance(distance);
-    resultEl.classList.add("is-recorded");
   });
 }
 
@@ -260,7 +461,9 @@ function initResultsView() {
   render();
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  initFieldView();
-  initResultsView();
-});
+if (typeof document !== "undefined") {
+  document.addEventListener("DOMContentLoaded", () => {
+    initFieldView();
+    initResultsView();
+  });
+}

@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Barlow+Condensed:wght@600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="../public/css/style.css">
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to main content</a>
@@ -49,7 +49,7 @@
         <li>Type the athlete's name (optional).</li>
         <li>Type the throw distance in metres, e.g. <code>14.20</code>, or use the − / + buttons to adjust it.</li>
         <li>Select <strong>Record Throw</strong>.</li>
-        <li>The shot animates to the landing spot, and the exact distance appears on the scoreboard below the field.</li>
+        <li>The shot leaves a trail as it travels and settles exactly on the landing distance, while the scoreboard below shows the exact number.</li>
       </ol>
     </section>
 
@@ -96,7 +96,7 @@
         <li>A "Skip to main content" link for keyboard and screen reader users.</li>
         <li>Error messages describe exactly what to fix, not just "invalid".</li>
         <li>Colour is never the only way information is shown — e.g. a personal best is also labelled "Personal best" in text.</li>
-        <li>Animations respect your device's "reduce motion" setting.</li>
+        <li>If your device requests reduced motion, the shot appears directly at its landing spot instead of animating.</li>
       </ul>
     </section>
 
@@ -134,6 +134,6 @@
     <p>Shot Put Field Tool — built for athletes, coaches, teachers and spectators.</p>
   </footer>
 
-  <script src="app.js"></script>
+  <script src="../app.js"></script>
 </body>
 </html>

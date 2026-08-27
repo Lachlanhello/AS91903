@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Barlow+Condensed:wght@600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="../public/css/style.css">
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to main content</a>
@@ -45,48 +45,43 @@
       <section class="field-panel card" aria-labelledby="field-heading">
         <h2 id="field-heading" class="visually-hidden">Shot put field diagram</h2>
 
-        <svg viewBox="0 0 400 520" role="img" aria-labelledby="svg-title svg-desc">
-          <title id="svg-title">Shot put field diagram</title>
-          <desc id="svg-desc">
-            A green shot put field viewed from above the throwing circle,
-            with distance markers at 5, 10, 15, 20 and 25 metres. When a
-            throw is recorded, the shot animates from the circle to the
-            landing distance, and the distance is shown as text below the
-            field.
-          </desc>
+        <div class="field-container">
+          <svg id="field-svg" viewBox="0 0 640 380" role="img" aria-labelledby="svg-title svg-desc" preserveAspectRatio="xMidYMid meet">
+            <title id="svg-title">Shot put field diagram</title>
+            <desc id="svg-desc">
+              A green shot put field viewed from above the throwing circle,
+              with distance markers at 5, 10, 15, 20 and 25 metres. When a
+              throw is recorded, the shot travels along a trail and settles
+              at the landing distance, and the exact distance is shown as
+              text below the field.
+            </desc>
 
-          <rect x="0" y="0" width="400" height="520" fill="#eef5ee" />
-          <rect x="30" y="95" width="340" height="385" rx="14" style="fill:var(--color-turf)" />
+            <defs>
+              <radialGradient id="ball-gradient" cx="35%" cy="30%" r="70%">
+                <stop offset="0%" stop-color="#fbf7ec" />
+                <stop offset="55%" stop-color="#aeb4ba" />
+                <stop offset="100%" stop-color="#43474b" />
+              </radialGradient>
+              <pattern id="grass-dots" width="14" height="14" patternUnits="userSpaceOnUse">
+                <rect width="14" height="14" style="fill:var(--color-turf)" />
+                <circle cx="3" cy="3" r="1" fill="rgba(255,255,255,0.10)" />
+                <circle cx="10" cy="10" r="1" fill="rgba(255,255,255,0.07)" />
+              </pattern>
+            </defs>
 
-          <line x1="200" y1="454" x2="92" y2="110" stroke="#ffffff" stroke-width="2.5" />
-          <line x1="200" y1="454" x2="308" y2="110" stroke="#ffffff" stroke-width="2.5" />
+            <!-- Built at runtime by buildField() in app.js, using the same
+                 FIELD geometry object the throw animation uses, so the
+                 rings drawn here and the maths that lands the shot can
+                 never disagree with each other. -->
+            <g id="field-graphic"></g>
 
-          <path d="M178,385 Q200,375 222,385" fill="none" stroke="#ffffff" stroke-width="2" />
-          <text class="field-label" x="170" y="389" text-anchor="end">5 m</text>
-
-          <path d="M157,316 Q200,304 243,316" fill="none" stroke="#ffffff" stroke-width="2" />
-          <text class="field-label" x="149" y="320" text-anchor="end">10 m</text>
-
-          <path d="M135,248 Q200,234 265,248" fill="none" stroke="#ffffff" stroke-width="2" />
-          <text class="field-label" x="127" y="252" text-anchor="end">15 m</text>
-
-          <path d="M114,179 Q200,163 286,179" fill="none" stroke="#ffffff" stroke-width="2" />
-          <text class="field-label" x="106" y="183" text-anchor="end">20 m</text>
-
-          <path d="M92,110 Q200,92 308,110" fill="none" stroke="#ffffff" stroke-width="2" />
-          <text class="field-label" x="84" y="114" text-anchor="end">25 m</text>
-
-          <circle cx="200" cy="480" r="26" fill="#256b32" stroke="#ffffff" stroke-width="2.5" />
-          <rect x="185" y="450" width="30" height="6" rx="2" fill="#ffffff" />
-          <text class="field-label" x="200" y="500" text-anchor="middle">Circle</text>
-
-          <line id="trail-line" class="trail-line" x1="200" y1="454" x2="200" y2="454" stroke-linecap="round" />
-          <line id="landing-marker" x1="200" y1="454" x2="200" y2="454" stroke-linecap="round" />
-          <text id="landing-label" x="210" y="454"></text>
-          <circle id="landing-pulse" class="landing-pulse" cx="200" cy="454" r="10" />
-
-          <circle id="shot" cx="200" cy="454" r="7" />
-        </svg>
+            <line id="trail-line" class="trail-line" stroke-linecap="round" />
+            <ellipse id="shot-shadow" class="shot-shadow" rx="8" ry="4" />
+            <circle id="shot" r="9" fill="url(#ball-gradient)" />
+            <circle id="landing-pulse" class="landing-pulse" r="8" />
+            <text id="landing-label"></text>
+          </svg>
+        </div>
       </section>
 
       <section class="throw-panel card" aria-labelledby="throw-heading">
@@ -129,6 +124,6 @@
     <p>Shot Put Field Tool — built for athletes, coaches, teachers and spectators.</p>
   </footer>
 
-  <script src="app.js"></script>
+  <script src="../app.js"></script>
 </body>
 </html>
