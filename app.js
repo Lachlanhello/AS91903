@@ -3,45 +3,9 @@
    Handles: throw storage (shared between Field View and
    Results View via localStorage), input validation, the
    field diagram + throw animation, and the results table.
+   This file is browser-only client code, loaded via a
+   <script> tag - it has no server logic in it.
    ========================================================= */
-
-if (typeof module !== "undefined" && module.exports) {
-  const express = require("express");
-  const path = require("path");
-  const server = express();
-  const viewsDirectory = path.join(__dirname, "views");
-
-  server.use("/public", express.static(path.join(__dirname, "public")));
-
-  const routes = {
-    "/": "index.html",
-    "/field": "field.html",
-    "/field.html": "field.html",
-    "/results": "results.html",
-    "/results.html": "results.html",
-    "/guide": "guide.html",
-    "/guide.html": "guide.html"
-  };
-
-  Object.entries(routes).forEach(([route, view]) => {
-    server.get(route, (request, response) => {
-      response.sendFile(path.join(viewsDirectory, view));
-    });
-  });
-
-  server.get("/app.js", (request, response) => {
-    response.sendFile(__filename);
-  });
-
-  if (require.main === module) {
-    const port = process.env.PORT || 3000;
-    server.listen(port, () => {
-      console.log("Shot Put Field Tool running at http://localhost:" + port);
-    });
-  }
-
-  module.exports = server;
-}
 
 const STORAGE_KEY = "shotput_throws";
 const NAME_KEY = "shotput_athlete";
