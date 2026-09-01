@@ -14,7 +14,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // CSS and JS are served directly from /public, e.g.
-// /css/styles.css and /js/app.js
+// /css/style.css and /js/app.js
 app.use(express.static(path.join(__dirname, "public")));
 
 const VIEWS_DIR = path.join(__dirname, "views");
