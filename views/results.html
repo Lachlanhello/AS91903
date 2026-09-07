@@ -4,11 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Results — Shot Put Field Tool</title>
-  <meta name="description" content="Clear, text-based shot put results: athlete name, throw number, distance and personal best.">
+  <meta name="description" content="A leaderboard of shot put throws by athlete, plus the full text-based throw log.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Barlow+Condensed:wght@600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/style.css?v=6">
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to main content</a>
@@ -42,17 +42,17 @@
     </div>
 
     <p>
-      This page shows every recorded throw as plain text and numbers, so you
-      can see exactly what happened without needing to read the field
-      animation.
+      Every athlete's best throw, ranked, plus the full text-based log of
+      every attempt below it — so you can see exactly what happened
+      without needing to read the field animation.
     </p>
 
     <section class="card" aria-labelledby="summary-heading">
       <h2 id="summary-heading">Summary</h2>
       <dl class="summary-grid">
         <div>
-          <dt>Athlete</dt>
-          <dd id="summary-athlete">—</dd>
+          <dt>Athletes</dt>
+          <dd id="summary-athletes">0</dd>
         </div>
         <div>
           <dt>Throws recorded</dt>
@@ -63,28 +63,49 @@
           <dd id="summary-current">—</dd>
         </div>
         <div>
-          <dt>Personal best</dt>
+          <dt>Overall best</dt>
           <dd id="summary-best">—</dd>
         </div>
       </dl>
     </section>
 
+    <section class="card leaderboard-card" aria-labelledby="leaderboard-heading">
+      <h2 id="leaderboard-heading">Leaderboard</h2>
+
+      <table id="leaderboard-table" hidden>
+        <caption class="visually-hidden">Athletes ranked by their best throw distance</caption>
+        <thead>
+          <tr>
+            <th scope="col">Rank</th>
+            <th scope="col">Athlete</th>
+            <th scope="col">Best throw</th>
+            <th scope="col">Attempts</th>
+            <th scope="col"><span class="visually-hidden">Status</span></th>
+          </tr>
+        </thead>
+        <tbody id="leaderboard-tbody"></tbody>
+      </table>
+
+      <p id="leaderboard-empty" class="hint">No throws recorded yet. Go to Field View to record the first one.</p>
+    </section>
+
     <section class="card" aria-labelledby="log-heading">
-      <h2 id="log-heading">Throw log</h2>
+      <h2 id="log-heading">Full throw log</h2>
 
       <table id="throw-table" hidden>
-        <caption class="visually-hidden">List of recorded throws in order, showing throw number and distance</caption>
+        <caption class="visually-hidden">Every recorded throw in order, showing athlete, throw number and distance</caption>
         <thead>
           <tr>
             <th scope="col">Throw #</th>
+            <th scope="col">Athlete</th>
             <th scope="col">Distance</th>
-            <th scope="col">Best</th>
+            <th scope="col"><span class="visually-hidden">Status</span></th>
           </tr>
         </thead>
         <tbody id="throw-tbody"></tbody>
       </table>
 
-      <p id="empty-state" class="hint">No throws recorded yet. Go to Field View to record your first throw.</p>
+      <p id="empty-state" class="hint">No throws recorded yet.</p>
 
       <button id="clear-throws" class="btn btn-secondary">Clear all throws</button>
     </section>
@@ -94,6 +115,6 @@
     <p>Shot Put Field Tool — built for athletes, coaches, teachers and spectators.</p>
   </footer>
 
-  <script src="/js/app.js"></script>
+  <script src="/js/app.js?v=6"></script>
 </body>
 </html>

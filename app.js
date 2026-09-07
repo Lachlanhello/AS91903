@@ -2,7 +2,16 @@
    Shot Put Field Tool — app.js
    Handles: throw storage (shared between Field View and
    Results View via localStorage), input validation, the
-   field diagram + throw animation, and the results table.
+   throw animation, and the leaderboard.
+
+   The field diagram itself (grass, apron, sector lines, rings,
+   throw circle) is plain static SVG markup in field.html - it
+   is NOT built by this script. Only the moving parts (the shot,
+   its shadow, its trail, and the landing marker) are controlled
+   here. This means the field always renders correctly even if
+   a script error happens elsewhere; only the animation depends
+   on JavaScript running.
+
    This file is browser-only client code, loaded via a
    <script> tag - it has no server logic in it.
    ========================================================= */
@@ -10,7 +19,10 @@
 const STORAGE_KEY = "shotput_throws";
 const NAME_KEY = "shotput_athlete";
 
-/* ---------- Storage helpers ---------- */
+/* ---------- Storage helpers ----------
+   Each recorded throw stores the athlete's name alongside the
+   distance, so results can be grouped into a real leaderboard
+   instead of one long undifferentiated list. */
 
 function getThrows() {
   try {
@@ -30,9 +42,9 @@ function saveThrows(throws) {
   }
 }
 
-function addThrow(distance) {
+function addThrow(name, distance) {
   const throws = getThrows();
-  throws.push({ distance: distance, recordedAt: new Date().toISOString() });
+  throws.push({ name: name, distance: distance, recordedAt: new Date().toISOString() });
   saveThrows(throws);
   return throws;
 }
@@ -41,9 +53,34 @@ function clearThrows() {
   saveThrows([]);
 }
 
+// The single best throw across everyone.
 function getBest(throws) {
   if (throws.length === 0) return null;
   return throws.reduce((best, t) => (t.distance > best.distance ? t : best), throws[0]);
+}
+
+// The best throw belonging to one specific athlete, so "personal
+// best" on Field View is scoped to that athlete, not the whole field.
+function getBestForAthlete(throws, name) {
+  const mine = throws.filter((t) => t.name === name);
+  return getBest(mine);
+}
+
+// Groups every throw by athlete name and ranks them by their best
+// distance - this is the actual leaderboard shown on Field View
+// and Results.
+function buildLeaderboard(throws) {
+  const byName = new Map();
+  throws.forEach((t) => {
+    if (!byName.has(t.name)) {
+      byName.set(t.name, { name: t.name, best: t.distance, attempts: 1 });
+    } else {
+      const entry = byName.get(t.name);
+      entry.attempts += 1;
+      if (t.distance > entry.best) entry.best = t.distance;
+    }
+  });
+  return Array.from(byName.values()).sort((a, b) => b.best - a.best);
 }
 
 function getAthleteName() {
@@ -58,108 +95,87 @@ function formatDistance(value) {
   return value.toFixed(2) + " m";
 }
 
+function leadingTagHtml(label) {
+  return '<span class="best-tag"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" ' +
+    'fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+    '<path d="M8 21h8M12 17v4M7 4h10l-1 8a4 4 0 0 1-8 0L7 4Z"/>' +
+    '<path d="M7 6H4a3 3 0 0 0 3 5M17 6h3a3 3 0 0 1-3 5"/></svg>' + label + '</span>';
+}
+
+// Shared leaderboard table renderer, used by BOTH the compact
+// leaderboard on Field View (updated live after every throw) and
+// the full leaderboard on Results (rendered once per page load).
+// Keeping this in one place means the two can never drift apart.
+function renderLeaderboardTable(tbodyEl, tableEl, emptyEl, throws) {
+  if (!tbodyEl) return;
+
+  const leaderboard = buildLeaderboard(throws);
+  tbodyEl.innerHTML = "";
+
+  if (leaderboard.length === 0) {
+    if (tableEl) tableEl.hidden = true;
+    if (emptyEl) emptyEl.hidden = false;
+    return;
+  }
+
+  if (tableEl) tableEl.hidden = false;
+  if (emptyEl) emptyEl.hidden = true;
+
+  leaderboard.forEach((entry, index) => {
+    const row = document.createElement("tr");
+    const isLeader = index === 0;
+    if (isLeader) row.classList.add("is-best");
+
+    const rankCell = document.createElement("td");
+    rankCell.textContent = String(index + 1);
+
+    const nameCell = document.createElement("td");
+    nameCell.textContent = entry.name;
+
+    const bestCell = document.createElement("td");
+    bestCell.textContent = formatDistance(entry.best);
+
+    const attemptsCell = document.createElement("td");
+    attemptsCell.textContent = String(entry.attempts);
+
+    const tagCell = document.createElement("td");
+    tagCell.innerHTML = isLeader ? leadingTagHtml("Leading") : "";
+
+    row.append(rankCell, nameCell, bestCell, attemptsCell, tagCell);
+    tbodyEl.appendChild(row);
+  });
+}
+
 /* =========================================================
    Field geometry
-   Every distance <-> position conversion in this file (the
-   static rings, the flying shot, and the landing marker) is
-   worked out from this one FIELD object. That way the picture
-   and the maths can never disagree about where a distance sits.
-   The half-angle below (17.46°) is half of the real 34.92°
-   shot put sector used in competition.
+   Used only to work out where the shot should travel to for a
+   given distance. The static field diagram in field.html was
+   hand-drawn to match these exact same numbers, so the picture
+   and the maths always agree on where a distance sits. The
+   half-angle below (17.46°) is half of the real 34.92° shot put
+   sector used in competition.
    ========================================================= */
 
 const FIELD = {
   originX: 92,
-  originY: 190,
+  originY: 230,
   halfAngleDeg: 17.46,
-  maxDistance: 30,  // matches the validation limit further down
-  maxRadius: 460,   // pixels, chosen to fit the 640-wide viewBox
+  maxDistance: 30, // matches the validation limit further down
 };
-const SCALE = FIELD.maxRadius / FIELD.maxDistance; // pixels per metre
-const RING_DISTANCES = [5, 10, 15, 20, 25];
-const SVG_NS = "http://www.w3.org/2000/svg";
+const MAX_RADIUS = 560; // pixels - matches field.html's static markup
+const SCALE = MAX_RADIUS / FIELD.maxDistance; // pixels per metre
 
 function toRadians(degrees) {
   return (degrees * Math.PI) / 180;
 }
 
-// A point at a given pixel radius and angle from the throwing circle.
-function pointAtRadius(radiusPx, angleDeg) {
+function fieldPoint(distanceMetres, angleDeg) {
   const theta = toRadians(angleDeg);
+  const radiusPx = distanceMetres * SCALE;
   return {
     x: FIELD.originX + radiusPx * Math.cos(theta),
     y: FIELD.originY + radiusPx * Math.sin(theta),
   };
-}
-
-// The point that a given real-world distance and angle map to on screen.
-function fieldPoint(distanceMetres, angleDeg) {
-  return pointAtRadius(distanceMetres * SCALE, angleDeg);
-}
-
-// An SVG arc path for the ring at a given distance, spanning the sector.
-function ringPath(distanceMetres) {
-  const r = distanceMetres * SCALE;
-  const p1 = fieldPoint(distanceMetres, -FIELD.halfAngleDeg);
-  const p2 = fieldPoint(distanceMetres, FIELD.halfAngleDeg);
-  return "M " + p1.x.toFixed(1) + " " + p1.y.toFixed(1) +
-    " A " + r.toFixed(1) + " " + r.toFixed(1) + " 0 0 1 " +
-    p2.x.toFixed(1) + " " + p2.y.toFixed(1);
-}
-
-function svgEl(tag, attrs) {
-  const el = document.createElementNS(SVG_NS, tag);
-  Object.entries(attrs).forEach(([key, value]) => el.setAttribute(key, value));
-  return el;
-}
-
-// Draws the grass, apron, sector lines, distance rings and throwing
-// circle into the <g id="field-graphic"> placeholder in field.html.
-function buildField(graphic) {
-  graphic.innerHTML = "";
-
-  graphic.appendChild(svgEl("rect", { class: "grass", x: 0, y: 0, width: 640, height: 380 }));
-  graphic.appendChild(svgEl("rect", { class: "apron", x: 0, y: 0, width: FIELD.originX + 46, height: 380 }));
-
-  const edgeRadius = FIELD.maxRadius + 60;
-  [-FIELD.halfAngleDeg, FIELD.halfAngleDeg].forEach((angle) => {
-    const p = pointAtRadius(edgeRadius, angle);
-    graphic.appendChild(svgEl("line", {
-      class: "sector-line",
-      x1: FIELD.originX, y1: FIELD.originY,
-      x2: p.x.toFixed(1), y2: p.y.toFixed(1),
-    }));
-  });
-
-  RING_DISTANCES.forEach((distance, index) => {
-    const isFurthest = index === RING_DISTANCES.length - 1;
-    graphic.appendChild(svgEl("path", {
-      class: isFurthest ? "ring ring-far" : "ring",
-      d: ringPath(distance),
-    }));
-    const labelPoint = fieldPoint(distance, 0);
-    const label = svgEl("text", {
-      class: isFurthest ? "ring-label ring-label-far" : "ring-label",
-      x: labelPoint.x.toFixed(1),
-      y: (FIELD.originY - 10).toFixed(1),
-    });
-    label.textContent = distance + " m";
-    graphic.appendChild(label);
-  });
-
-  graphic.appendChild(svgEl("circle", {
-    class: "throw-circle",
-    cx: FIELD.originX, cy: FIELD.originY, r: 24,
-  }));
-  graphic.appendChild(svgEl("line", {
-    class: "toe-line",
-    x1: FIELD.originX, y1: FIELD.originY - 24,
-    x2: FIELD.originX, y2: FIELD.originY + 24,
-  }));
-  graphic.appendChild(svgEl("rect", {
-    class: "field-border",
-    x: 2, y: 2, width: 636, height: 376, rx: 16,
-  }));
 }
 
 /* ---------- Field View ---------- */
@@ -174,33 +190,34 @@ function initFieldView() {
   const stepUp = document.getElementById("distance-step-up");
   const errorEl = document.getElementById("distance-error");
   const resultEl = document.getElementById("throw-result");
+  const motionNoteEl = document.getElementById("motion-note");
 
-  const fieldGraphic = document.getElementById("field-graphic");
   const shot = document.getElementById("shot");
   const shotShadow = document.getElementById("shot-shadow");
   const trailLine = document.getElementById("trail-line");
   const landingPulse = document.getElementById("landing-pulse");
   const landingLabel = document.getElementById("landing-label");
 
-  buildField(fieldGraphic);
+  const leaderboardTbody = document.getElementById("leaderboard-tbody");
+  const leaderboardTable = document.getElementById("leaderboard-table");
+  const leaderboardEmpty = document.getElementById("leaderboard-empty");
 
   const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // Let the person know *why* the shot isn't animating, rather than
+  // leaving it looking broken - this is read from the OS/browser
+  // "reduce motion" accessibility setting, not a bug.
+  if (motionNoteEl && prefersReducedMotion) {
+    motionNoteEl.hidden = false;
+  }
 
   // Restore saved athlete name
   nameInput.value = getAthleteName();
   nameInput.addEventListener("input", () => setAthleteName(nameInput.value.trim()));
 
-  function positionAtOrigin() {
-    shot.setAttribute("cx", FIELD.originX);
-    shot.setAttribute("cy", FIELD.originY);
-    shotShadow.setAttribute("cx", FIELD.originX);
-    shotShadow.setAttribute("cy", FIELD.originY);
-    trailLine.setAttribute("x1", FIELD.originX);
-    trailLine.setAttribute("y1", FIELD.originY);
-    trailLine.setAttribute("x2", FIELD.originX);
-    trailLine.setAttribute("y2", FIELD.originY);
-  }
-  positionAtOrigin();
+  // Show whatever leaderboard state already exists (e.g. from a
+  // previous visit) as soon as the page loads.
+  renderLeaderboardTable(leaderboardTbody, leaderboardTable, leaderboardEmpty, getThrows());
 
   // A small random angle within the legal sector, used purely so the
   // shot doesn't land in exactly the same spot every time. It never
@@ -231,7 +248,15 @@ function initFieldView() {
     landingPulse.classList.add("is-pulsing");
   }
 
-  function finishThrow(distance, point) {
+  function resolveAthleteName() {
+    const typed = nameInput.value.trim();
+    if (typed) return typed;
+    const fallback = "Athlete " + (getThrows().length + 1);
+    nameInput.value = fallback;
+    return fallback;
+  }
+
+  function finishThrow(name, distance, point) {
     shot.setAttribute("cx", point.x.toFixed(1));
     shot.setAttribute("cy", point.y.toFixed(1));
     shot.setAttribute("r", 9);
@@ -253,23 +278,26 @@ function initFieldView() {
 
     showLandingPulse(point);
 
-    addThrow(distance);
-    const best = getBest(getThrows());
-    const isNewBest = Boolean(best) && best.distance === distance;
+    addThrow(name, distance);
+    const ownBest = getBestForAthlete(getThrows(), name);
+    const isOwnBest = Boolean(ownBest) && ownBest.distance === distance;
 
-    resultEl.textContent = "Throw recorded: " + formatDistance(distance) +
-      (isNewBest ? " — new personal best!" : "");
+    resultEl.textContent = name + " — throw recorded: " + formatDistance(distance) +
+      (isOwnBest ? " — new personal best!" : "");
     resultEl.classList.add("is-recorded");
+
+    // Update the on-page leaderboard immediately, without navigating away.
+    renderLeaderboardTable(leaderboardTbody, leaderboardTable, leaderboardEmpty, getThrows());
   }
 
-  function animateThrow(distance) {
+  function animateThrow(name, distance) {
     const angle = randomAngle();
     const targetPoint = fieldPoint(distance, angle);
 
     // Respect the person's reduced-motion preference: skip the moving
     // animation entirely and go straight to the result.
     if (prefersReducedMotion) {
-      finishThrow(distance, targetPoint);
+      finishThrow(name, distance, targetPoint);
       return;
     }
 
@@ -302,7 +330,7 @@ function initFieldView() {
       if (progress < 1) {
         requestAnimationFrame(frame);
       } else {
-        finishThrow(distance, targetPoint);
+        finishThrow(name, distance, targetPoint);
       }
     }
 
@@ -344,71 +372,85 @@ function initFieldView() {
       return;
     }
 
-    animateThrow(distance);
+    try {
+      const name = resolveAthleteName();
+      setAthleteName(name);
+      animateThrow(name, distance);
+    } catch (err) {
+      // Surface unexpected errors on the page itself, not just the
+      // console, so a broken throw is never silent.
+      console.error("Could not record throw:", err);
+      showError("Something went wrong recording that throw. Please try again.");
+    }
   });
 }
 
-/* ---------- Results View ---------- */
+/* ---------- Results View / Leaderboard ---------- */
 
 function initResultsView() {
-  const tbody = document.getElementById("throw-tbody");
-  if (!tbody) return; // Not on this page
+  const clearBtn = document.getElementById("clear-throws");
+  if (!clearBtn) return; // Not on this page (Field View also has a leaderboard table, but no clear button)
 
-  const emptyState = document.getElementById("empty-state");
-  const table = document.getElementById("throw-table");
-  const summaryAthlete = document.getElementById("summary-athlete");
+  const leaderboardTbody = document.getElementById("leaderboard-tbody");
+  const leaderboardTable = document.getElementById("leaderboard-table");
+  const leaderboardEmpty = document.getElementById("leaderboard-empty");
+
+  const logTbody = document.getElementById("throw-tbody");
+  const logTable = document.getElementById("throw-table");
+  const logEmpty = document.getElementById("empty-state");
+
+  const summaryAthletes = document.getElementById("summary-athletes");
   const summaryCount = document.getElementById("summary-count");
   const summaryCurrent = document.getElementById("summary-current");
   const summaryBest = document.getElementById("summary-best");
-  const clearBtn = document.getElementById("clear-throws");
 
   function render() {
     const throws = getThrows();
     const best = getBest(throws);
-    const name = getAthleteName();
 
-    summaryAthlete.textContent = name || "Not set";
+    // --- Summary ---
+    const distinctAthletes = new Set(throws.map((t) => t.name)).size;
+    summaryAthletes.textContent = String(distinctAthletes);
     summaryCount.textContent = String(throws.length);
     summaryCurrent.textContent = throws.length
-      ? formatDistance(throws[throws.length - 1].distance)
+      ? formatDistance(throws[throws.length - 1].distance) + " (" + throws[throws.length - 1].name + ")"
       : "—";
-    summaryBest.textContent = best ? formatDistance(best.distance) : "—";
+    summaryBest.textContent = best ? formatDistance(best.distance) + " (" + best.name + ")" : "—";
 
-    tbody.innerHTML = "";
+    // --- Leaderboard: ranked by each athlete's best throw ---
+    renderLeaderboardTable(leaderboardTbody, leaderboardTable, leaderboardEmpty, throws);
+
+    // --- Full throw log: every attempt, in the order it was recorded ---
+    logTbody.innerHTML = "";
 
     if (throws.length === 0) {
-      table.hidden = true;
-      emptyState.hidden = false;
+      logTable.hidden = true;
+      logEmpty.hidden = false;
       return;
     }
 
-    table.hidden = false;
-    emptyState.hidden = true;
+    logTable.hidden = false;
+    logEmpty.hidden = true;
 
     throws.forEach((t, index) => {
       const row = document.createElement("tr");
-      const isBest = best && t.distance === best.distance;
+      const isBest = best && t.distance === best.distance && t.name === best.name;
       if (isBest) row.classList.add("is-best");
 
       const numCell = document.createElement("td");
       numCell.textContent = String(index + 1);
 
+      const nameCell = document.createElement("td");
+      nameCell.textContent = t.name;
+
       const distCell = document.createElement("td");
       distCell.textContent = formatDistance(t.distance);
 
       const bestCell = document.createElement("td");
-      if (isBest) {
-        bestCell.innerHTML =
-          '<span class="best-tag"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" ' +
-          'fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
-          '<path d="M8 21h8M12 17v4M7 4h10l-1 8a4 4 0 0 1-8 0L7 4Z"/>' +
-          '<path d="M7 6H4a3 3 0 0 0 3 5M17 6h3a3 3 0 0 1-3 5"/></svg>Personal best</span>';
-      } else {
-        bestCell.textContent = "";
-      }
+      bestCell.innerHTML = isBest ? leadingTagHtml("Personal best") : "";
 
-      row.append(numCell, distCell, bestCell);
-      tbody.appendChild(row);
+      row.append(numCell, nameCell, distCell, bestCell);
+      logTbody.appendChild(row);
     });
   }
 

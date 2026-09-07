@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Barlow+Condensed:wght@600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/style.css?v=6">
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to main content</a>
@@ -41,12 +41,23 @@
       <a href="/results" class="toggle-btn">Results View</a>
     </div>
 
+    <p id="motion-note" class="hint" hidden>
+      Your device is set to reduce motion, so the shot appears directly at
+      its landing spot instead of animating across the field.
+    </p>
+
     <div class="field-layout">
       <section class="field-panel card" aria-labelledby="field-heading">
         <h2 id="field-heading" class="visually-hidden">Shot put field diagram</h2>
 
         <div class="field-container">
-          <svg id="field-svg" viewBox="0 0 640 380" role="img" aria-labelledby="svg-title svg-desc" preserveAspectRatio="xMidYMid meet">
+          <!-- The field graphic below (grass, apron, sector lines, rings,
+               throwing circle) is plain static SVG markup - it always
+               renders, even if JavaScript fails to run. Only the shot,
+               its trail/shadow, and the landing marker near the bottom
+               are moved by app.js. Their starting coordinates already
+               match the throwing circle below. -->
+          <svg id="field-svg" viewBox="0 0 760 460" role="img" aria-labelledby="svg-title svg-desc" preserveAspectRatio="xMidYMid meet">
             <title id="svg-title">Shot put field diagram</title>
             <desc id="svg-desc">
               A green shot put field viewed from above the throwing circle,
@@ -69,54 +80,98 @@
               </pattern>
             </defs>
 
-            <!-- Built at runtime by buildField() in app.js, using the same
-                 FIELD geometry object the throw animation uses, so the
-                 rings drawn here and the maths that lands the shot can
-                 never disagree with each other. -->
-            <g id="field-graphic"></g>
+            <rect class="grass" x="0" y="0" width="760" height="460" />
+            <rect class="apron" x="0" y="0" width="138" height="460" />
 
-            <line id="trail-line" class="trail-line" stroke-linecap="round" />
-            <ellipse id="shot-shadow" class="shot-shadow" rx="8" ry="4" />
-            <circle id="shot" r="9" fill="url(#ball-gradient)" />
-            <circle id="landing-pulse" class="landing-pulse" r="8" />
-            <text id="landing-label"></text>
+            <line class="sector-line" x1="92" y1="230" x2="683.4" y2="44.0" />
+            <line class="sector-line" x1="92" y1="230" x2="683.4" y2="416.0" />
+
+            <path class="ring" d="M 181.0 202.0 A 93.3 93.3 0 0 1 181.0 258.0" />
+            <text class="ring-label" x="185.3" y="220.0">5 m</text>
+
+            <path class="ring" d="M 270.1 174.0 A 186.7 186.7 0 0 1 270.1 286.0" />
+            <text class="ring-label" x="278.7" y="220.0">10 m</text>
+
+            <path class="ring" d="M 359.1 146.0 A 280.0 280.0 0 0 1 359.1 314.0" />
+            <text class="ring-label" x="372.0" y="220.0">15 m</text>
+
+            <path class="ring" d="M 448.1 118.0 A 373.3 373.3 0 0 1 448.1 342.0" />
+            <text class="ring-label" x="465.3" y="220.0">20 m</text>
+
+            <path class="ring ring-far" d="M 537.2 90.0 A 466.7 466.7 0 0 1 537.2 370.0" />
+            <text class="ring-label ring-label-far" x="558.7" y="220.0">25 m</text>
+
+            <circle class="throw-circle" cx="92" cy="230" r="24" />
+            <line class="toe-line" x1="92" y1="206" x2="92" y2="254" />
+
+            <rect class="field-border" x="2" y="2" width="756" height="456" rx="16" />
+
+            <!-- Flight elements: positioned by app.js, but given safe
+                 starting coordinates here so they are visible even
+                 before any JavaScript runs. -->
+            <line id="trail-line" class="trail-line" x1="92" y1="230" x2="92" y2="230" stroke-linecap="round" />
+            <ellipse id="shot-shadow" class="shot-shadow" cx="92" cy="230" rx="8" ry="4" />
+            <circle id="shot" cx="92" cy="230" r="9" fill="url(#ball-gradient)" />
+            <circle id="landing-pulse" class="landing-pulse" cx="92" cy="230" r="8" />
+            <text id="landing-label" x="92" y="230"></text>
           </svg>
         </div>
       </section>
 
-      <section class="throw-panel card" aria-labelledby="throw-heading">
-        <h2 id="throw-heading">Record a throw</h2>
+      <div class="field-sidebar">
+        <section class="throw-panel card" aria-labelledby="throw-heading">
+          <h2 id="throw-heading">Record a throw</h2>
 
-        <form id="throw-form" novalidate>
-          <div class="field-group">
-            <label for="athlete-name">Athlete name</label>
-            <input type="text" id="athlete-name" name="athlete-name" autocomplete="name" placeholder="e.g. Jordan Smith">
-          </div>
-
-          <div class="field-group">
-            <label for="distance-input">Throw distance (metres)</label>
-            <div class="distance-stepper">
-              <button type="button" id="distance-step-down" class="stepper-btn" aria-label="Decrease distance by 0.1 metres">−</button>
-              <input
-                type="number"
-                id="distance-input"
-                name="distance"
-                step="0.01"
-                min="0"
-                inputmode="decimal"
-                aria-describedby="distance-hint distance-error"
-              >
-              <button type="button" id="distance-step-up" class="stepper-btn" aria-label="Increase distance by 0.1 metres">+</button>
+          <form id="throw-form" novalidate>
+            <div class="field-group">
+              <label for="athlete-name">Athlete name</label>
+              <input type="text" id="athlete-name" name="athlete-name" autocomplete="name" placeholder="e.g. Jordan Smith">
             </div>
-            <p id="distance-hint" class="hint">Enter a distance between 0.01 and 30 metres, or use the buttons to adjust by 0.1 m.</p>
-            <p id="distance-error" class="error-text" role="alert"></p>
-          </div>
 
-          <button type="submit" class="btn btn-primary">Record Throw</button>
-        </form>
+            <div class="field-group">
+              <label for="distance-input">Throw distance (metres)</label>
+              <div class="distance-stepper">
+                <button type="button" id="distance-step-down" class="stepper-btn" aria-label="Decrease distance by 0.1 metres">−</button>
+                <input
+                  type="number"
+                  id="distance-input"
+                  name="distance"
+                  step="0.01"
+                  min="0"
+                  inputmode="decimal"
+                  aria-describedby="distance-hint distance-error"
+                >
+                <button type="button" id="distance-step-up" class="stepper-btn" aria-label="Increase distance by 0.1 metres">+</button>
+              </div>
+              <p id="distance-hint" class="hint">Enter a distance between 0.01 and 30 metres, or use the buttons to adjust by 0.1 m.</p>
+              <p id="distance-error" class="error-text" role="alert"></p>
+            </div>
 
-        <p id="throw-result" class="throw-result scoreboard" aria-live="polite">No throw recorded yet.</p>
-      </section>
+            <button type="submit" class="btn btn-primary">Record Throw</button>
+          </form>
+
+          <p id="throw-result" class="throw-result scoreboard" aria-live="polite">No throw recorded yet.</p>
+        </section>
+
+        <section class="card leaderboard-card" aria-labelledby="mini-leaderboard-heading">
+          <h2 id="mini-leaderboard-heading">Leaderboard</h2>
+          <table id="leaderboard-table" hidden>
+            <caption class="visually-hidden">Athletes ranked by their best throw distance</caption>
+            <thead>
+              <tr>
+                <th scope="col">Rank</th>
+                <th scope="col">Athlete</th>
+                <th scope="col">Best</th>
+                <th scope="col">Tries</th>
+                <th scope="col"><span class="visually-hidden">Status</span></th>
+              </tr>
+            </thead>
+            <tbody id="leaderboard-tbody"></tbody>
+          </table>
+          <p id="leaderboard-empty" class="hint">No throws recorded yet.</p>
+          <a href="/results" class="leaderboard-link">View full leaderboard &amp; log →</a>
+        </section>
+      </div>
     </div>
   </main>
 
@@ -124,6 +179,6 @@
     <p>Shot Put Field Tool — built for athletes, coaches, teachers and spectators.</p>
   </footer>
 
-  <script src="/js/app.js"></script>
+  <script src="/js/app.js?v=6"></script>
 </body>
 </html>
