@@ -19,6 +19,12 @@ app.use(express.static(path.join(__dirname, "public")));
 
 const VIEWS_DIR = path.join(__dirname, "views");
 
+// Serve the browser script explicitly as a fallback. This also makes
+// /app.js work consistently in development and when the pages are hosted.
+app.get("/app.js", (req, res) => {
+  res.sendFile(path.join(__dirname, "app.js"));
+});
+
 app.get("/", (req, res) => {
   res.sendFile(path.join(VIEWS_DIR, "index.html"));
 });
