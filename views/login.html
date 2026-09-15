@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Log in — Shot Put Field Tool</title>
+  <meta name="description" content="Log in to the Shot Put Field Tool.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Barlow+Condensed:wght@600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css?v=7">
+</head>
+<body class="login-body">
+  <a class="skip-link" href="#main">Skip to main content</a>
+
+  <main id="main" class="login-main">
+    <div class="login-card card">
+      <div class="login-brand">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2.5" fill="currentColor" stroke="none"/></svg>
+        </span>
+        <span>Shot Put Field Tool</span>
+      </div>
+
+      <h1>Log in</h1>
+      <p class="hint">Admin accounts can record throws. Visitor accounts can view the leaderboard and results only.</p>
+
+      <p id="login-error" class="error-text" role="alert" hidden>
+        Username or password not recognised. Please try again.
+      </p>
+
+      <form method="POST" action="/login" id="login-form">
+        <div class="field-group">
+          <label for="username">Username</label>
+          <input type="text" id="username" name="username" autocomplete="username" required>
+        </div>
+        <div class="field-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" autocomplete="current-password" required>
+        </div>
+        <button type="submit" class="btn btn-primary login-submit">Log in</button>
+      </form>
+
+      <div class="demo-accounts">
+        <h2>Demo accounts</h2>
+        <dl>
+          <div>
+            <dt>Admin</dt>
+            <dd><code>admin</code> / <code>ShotPut2026!</code></dd>
+          </div>
+          <div>
+            <dt>Visitor</dt>
+            <dd><code>visitor</code> / <code>Spectator2026!</code></dd>
+          </div>
+        </dl>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    if (new URLSearchParams(window.location.search).get("error") === "1") {
+      document.getElementById("login-error").hidden = false;
+    }
+  </script>
+</body>
+</html>

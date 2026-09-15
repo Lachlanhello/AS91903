@@ -112,7 +112,7 @@ code {
 }
 .skip-link:focus { top: 0; }
 
-a:focus-visible,
+a:focus-visible,x
 button:focus-visible,
 input:focus-visible,
 .toggle-btn:focus-visible {

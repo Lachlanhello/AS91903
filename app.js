@@ -1,98 +1,143 @@
 /* =========================================================
    Shot Put Field Tool — app.js
-   Handles: throw storage (shared between Field View and
-   Results View via localStorage), input validation, the
-   throw animation, and the leaderboard.
-
-   The field diagram itself (grass, apron, sector lines, rings,
-   throw circle) is plain static SVG markup in field.html - it
-   is NOT built by this script. Only the moving parts (the shot,
-   its shadow, its trail, and the landing marker) are controlled
-   here. This means the field always renders correctly even if
-   a script error happens elsewhere; only the animation depends
-   on JavaScript running.
-
-   This file is browser-only client code, loaded via a
-   <script> tag - it has no server logic in it.
+   Browser-only client code. Throw data now lives on the
+   server (see db.js / server.js) instead of localStorage, so
+   every logged-in user sees the same shared leaderboard. This
+   file only keeps one thing in localStorage: the last-typed
+   athlete name, purely as a typing convenience.
    ========================================================= */
 
-const STORAGE_KEY = "shotput_throws";
-const NAME_KEY = "shotput_athlete";
+// If ANYTHING in this file throws an error that isn't caught
+// elsewhere, show it as an impossible-to-miss red banner at the
+// top of the page - a silent failure is much harder to diagnose
+// than a visible one. Open the browser console (F12) for the
+// full technical detail alongside this.
+window.addEventListener("error", (event) => {
+  console.error("[shotput] uncaught error:", event.error || event.message);
+  showFatalErrorBanner(event.message);
+});
 
-/* ---------- Storage helpers ----------
-   Each recorded throw stores the athlete's name alongside the
-   distance, so results can be grouped into a real leaderboard
-   instead of one long undifferentiated list. */
+window.addEventListener("unhandledrejection", (event) => {
+  console.error("[shotput] unhandled promise rejection:", event.reason);
+  showFatalErrorBanner(String(event.reason && event.reason.message || event.reason));
+});
 
-function getThrows() {
+function showFatalErrorBanner(message) {
+  if (document.getElementById("shotput-fatal-banner")) return; // only show once
+  const banner = document.createElement("div");
+  banner.id = "shotput-fatal-banner";
+  banner.setAttribute("role", "alert");
+  banner.style.cssText =
+    "position:fixed;top:0;left:0;right:0;z-index:9999;background:#a12b23;" +
+    "color:#fff;padding:14px 18px;font-family:sans-serif;font-size:15px;" +
+    "line-height:1.4;box-shadow:0 2px 10px rgba(0,0,0,0.3);";
+  banner.textContent =
+    "Something went wrong loading this page's script: " + message +
+    " — please press F12, open the Console tab, and share what's shown there.";
+  document.body.prepend(banner);
+}
+
+const NAME_HINT_KEY = "shotput_athlete_name_hint";
+
+function getAthleteNameHint() {
+  return localStorage.getItem(NAME_HINT_KEY) || "";
+}
+function setAthleteNameHint(name) {
+  localStorage.setItem(NAME_HINT_KEY, name);
+}
+function formatDistance(value) {
+  return value.toFixed(2) + " m";
+}
+
+/* ---------- Server API ----------
+   Every call goes through fetchWithTimeout so a stalled connection
+   can never hang forever - after 8 seconds it fails with a clear
+   error instead of leaving the page looking "stuck". */
+
+async function fetchWithTimeout(url, options) {
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), 8000);
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
+    return await fetch(url, Object.assign({}, options, { signal: controller.signal }));
   } catch (err) {
-    console.error("Could not read saved throws:", err);
-    return [];
+    if (err.name === "AbortError") {
+      throw new Error("The request timed out - check the server is still running and try again.");
+    }
+    throw err;
+  } finally {
+    window.clearTimeout(timeoutId);
   }
 }
 
-function saveThrows(throws) {
+async function apiGetMe() {
+  const res = await fetchWithTimeout("/api/me");
+  if (!res.ok) return null;
+  return res.json();
+}
+
+async function apiGetThrows() {
+  const res = await fetchWithTimeout("/api/throws");
+  if (!res.ok) throw new Error("Could not load throws (status " + res.status + ").");
+  return res.json();
+}
+
+async function apiAddThrow(athleteName, distance) {
+  const res = await fetchWithTimeout("/api/throws", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ athleteName, distance }),
+  });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(body.error || "Could not record that throw.");
+  return body;
+}
+
+async function apiClearThrows() {
+  const res = await fetchWithTimeout("/api/throws/clear", { method: "POST" });
+  if (!res.ok) throw new Error("Could not clear throws.");
+}
+
+/* ---------- User badge / role-based UI ----------
+   The server enforces who can do what (see requireAdmin in
+   server.js) - this just adjusts what's shown, so a visitor
+   never sees admin-only controls in the first place. */
+
+async function renderUserBadge() {
+  const badge = document.getElementById("user-badge");
+  if (!badge) return;
+
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(throws));
+    const me = await apiGetMe();
+    if (!me) return;
+
+    const textEl = document.getElementById("user-badge-text");
+    if (textEl) textEl.textContent = me.username + " (" + me.role + ")";
+    badge.hidden = false;
+
+    if (me.role === "admin") {
+      document.querySelectorAll(".admin-only").forEach((el) => { el.hidden = false; });
+    }
   } catch (err) {
-    console.error("Could not save throws:", err);
+    console.error("Could not load account info:", err);
   }
 }
 
-function addThrow(name, distance) {
-  const throws = getThrows();
-  throws.push({ name: name, distance: distance, recordedAt: new Date().toISOString() });
-  saveThrows(throws);
-  return throws;
+/* ---------- Leaderboard ---------- */
+
+function buildLeaderboard(throws) {
+  const byAthlete = new Map();
+  throws.forEach((t) => {
+    const entry = byAthlete.get(t.athleteName) || { name: t.athleteName, best: -Infinity, attempts: 0 };
+    entry.attempts += 1;
+    entry.best = Math.max(entry.best, t.distance);
+    byAthlete.set(t.athleteName, entry);
+  });
+  return Array.from(byAthlete.values()).sort((a, b) => b.best - a.best);
 }
 
-function clearThrows() {
-  saveThrows([]);
-}
-
-// The single best throw across everyone.
 function getBest(throws) {
   if (throws.length === 0) return null;
   return throws.reduce((best, t) => (t.distance > best.distance ? t : best), throws[0]);
-}
-
-// The best throw belonging to one specific athlete, so "personal
-// best" on Field View is scoped to that athlete, not the whole field.
-function getBestForAthlete(throws, name) {
-  const mine = throws.filter((t) => t.name === name);
-  return getBest(mine);
-}
-
-// Groups every throw by athlete name and ranks them by their best
-// distance - this is the actual leaderboard shown on Field View
-// and Results.
-function buildLeaderboard(throws) {
-  const byName = new Map();
-  throws.forEach((t) => {
-    if (!byName.has(t.name)) {
-      byName.set(t.name, { name: t.name, best: t.distance, attempts: 1 });
-    } else {
-      const entry = byName.get(t.name);
-      entry.attempts += 1;
-      if (t.distance > entry.best) entry.best = t.distance;
-    }
-  });
-  return Array.from(byName.values()).sort((a, b) => b.best - a.best);
-}
-
-function getAthleteName() {
-  return localStorage.getItem(NAME_KEY) || "";
-}
-
-function setAthleteName(name) {
-  localStorage.setItem(NAME_KEY, name);
-}
-
-function formatDistance(value) {
-  return value.toFixed(2) + " m";
 }
 
 function leadingTagHtml(label) {
@@ -102,10 +147,10 @@ function leadingTagHtml(label) {
     '<path d="M7 6H4a3 3 0 0 0 3 5M17 6h3a3 3 0 0 1-3 5"/></svg>' + label + '</span>';
 }
 
-// Shared leaderboard table renderer, used by BOTH the compact
-// leaderboard on Field View (updated live after every throw) and
-// the full leaderboard on Results (rendered once per page load).
-// Keeping this in one place means the two can never drift apart.
+// Shared leaderboard table renderer, used by BOTH the leaderboard on
+// Field View (refreshed live after every throw) and the full
+// leaderboard on Results. Ranked by each athlete's BEST throw, not
+// by recency - so it stays a real leaderboard, not a recent-throws list.
 function renderLeaderboardTable(tbodyEl, tableEl, emptyEl, throws) {
   if (!tbodyEl) return;
 
@@ -182,7 +227,11 @@ function fieldPoint(distanceMetres, angleDeg) {
 
 function initFieldView() {
   const form = document.getElementById("throw-form");
-  if (!form) return; // Not on this page
+  if (!form) {
+    console.log("[shotput] no #throw-form on this page - skipping Field View init (expected on Home/Results/Guide)");
+    return;
+  }
+  console.log("[shotput] initialising Field View...");
 
   const nameInput = document.getElementById("athlete-name");
   const distanceInput = document.getElementById("distance-input");
@@ -202,22 +251,36 @@ function initFieldView() {
   const leaderboardTable = document.getElementById("leaderboard-table");
   const leaderboardEmpty = document.getElementById("leaderboard-empty");
 
-  const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  // If any required element is missing, fail loudly instead of quietly
+  // doing nothing - this is exactly the kind of bug that otherwise
+  // looks identical to "the animation just doesn't work".
+  const required = { form, nameInput, distanceInput, errorEl, resultEl, shot, shotShadow, trailLine, landingPulse, landingLabel, leaderboardTbody };
+  Object.entries(required).forEach(([key, el]) => {
+    if (!el) throw new Error("Field View is missing a required element: #" + key + " - check field.html matches app.js");
+  });
 
-  // Let the person know *why* the shot isn't animating, rather than
-  // leaving it looking broken - this is read from the OS/browser
-  // "reduce motion" accessibility setting, not a bug.
+  const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  console.log("[shotput] prefers-reduced-motion:", prefersReducedMotion,
+    prefersReducedMotion ? "- the shot will jump to its landing spot instead of gliding (this is intentional, not a bug)" : "");
+
+  // Make this genuinely hard to miss, since a shot that "doesn't move"
+  // looks identical to a bug unless this is clearly explained.
   if (motionNoteEl && prefersReducedMotion) {
     motionNoteEl.hidden = false;
   }
 
-  // Restore saved athlete name
-  nameInput.value = getAthleteName();
-  nameInput.addEventListener("input", () => setAthleteName(nameInput.value.trim()));
+  nameInput.value = getAthleteNameHint();
+  nameInput.addEventListener("input", () => setAthleteNameHint(nameInput.value.trim()));
 
-  // Show whatever leaderboard state already exists (e.g. from a
-  // previous visit) as soon as the page loads.
-  renderLeaderboardTable(leaderboardTbody, leaderboardTable, leaderboardEmpty, getThrows());
+  async function refreshLeaderboard() {
+    try {
+      const throws = await apiGetThrows();
+      renderLeaderboardTable(leaderboardTbody, leaderboardTable, leaderboardEmpty, throws);
+    } catch (err) {
+      console.error("Could not refresh leaderboard:", err);
+    }
+  }
+  refreshLeaderboard();
 
   // A small random angle within the legal sector, used purely so the
   // shot doesn't land in exactly the same spot every time. It never
@@ -251,12 +314,15 @@ function initFieldView() {
   function resolveAthleteName() {
     const typed = nameInput.value.trim();
     if (typed) return typed;
-    const fallback = "Athlete " + (getThrows().length + 1);
+    const fallback = "Athlete";
     nameInput.value = fallback;
     return fallback;
   }
 
-  function finishThrow(name, distance, point) {
+  // Purely visual - positions the shot/shadow/trail/label at the
+  // landing point. Runs when the ANIMATION finishes, independent of
+  // whether the server save has finished yet.
+  function landShotAt(distance, point) {
     shot.setAttribute("cx", point.x.toFixed(1));
     shot.setAttribute("cy", point.y.toFixed(1));
     shot.setAttribute("r", 9);
@@ -277,41 +343,46 @@ function initFieldView() {
     landingLabel.classList.add("is-visible");
 
     showLandingPulse(point);
-
-    addThrow(name, distance);
-    const ownBest = getBestForAthlete(getThrows(), name);
-    const isOwnBest = Boolean(ownBest) && ownBest.distance === distance;
-
-    resultEl.textContent = name + " — throw recorded: " + formatDistance(distance) +
-      (isOwnBest ? " — new personal best!" : "");
-    resultEl.classList.add("is-recorded");
-
-    // Update the on-page leaderboard immediately, without navigating away.
-    renderLeaderboardTable(leaderboardTbody, leaderboardTable, leaderboardEmpty, getThrows());
   }
 
+  // Runs when the SERVER SAVE finishes - completely independent timing
+  // from the animation. This is what used to block the animation from
+  // starting at all; now the two happen in parallel instead.
+  function showSavedResult(name, distance) {
+    resultEl.textContent = name + " — throw recorded: " + formatDistance(distance);
+    resultEl.classList.add("is-recorded");
+    refreshLeaderboard();
+  }
+
+  // Purely visual, and now starts IMMEDIATELY on submit - it no longer
+  // waits on the network save (see the submit handler below). This
+  // matches how a fully client-side prototype would behave: the throw
+  // always animates right away, regardless of how long saving takes.
   function animateThrow(name, distance) {
     const angle = randomAngle();
     const targetPoint = fieldPoint(distance, angle);
+    console.log("[shotput] animateThrow called - target point:", targetPoint);
 
-    // Respect the person's reduced-motion preference: skip the moving
-    // animation entirely and go straight to the result.
     if (prefersReducedMotion) {
-      finishThrow(name, distance, targetPoint);
+      console.log("[shotput] reduced motion is ON - jumping straight to landing spot, no glide");
+      landShotAt(distance, targetPoint);
       return;
     }
 
-    const duration = Math.min(1600, 750 + distance * 26);
+    // Slower and with a bigger visual "hop" than earlier versions, so
+    // the motion is unmistakable rather than a near-instant jump.
+    const duration = Math.min(2400, 1100 + distance * 45);
     let start = null;
+    let frameCount = 0;
+    console.log("[shotput] starting animation loop, duration ~" + duration + "ms");
 
     function frame(timestamp) {
       if (!start) start = timestamp;
+      frameCount++;
       const progress = Math.min((timestamp - start) / duration, 1);
       const distanceSoFar = distance * progress;
       const point = fieldPoint(distanceSoFar, angle);
-      // A small parabolic "hop" used only for the visual height of the
-      // ball and its shadow - it has no effect on the measured distance.
-      const hop = 4 * progress * (1 - progress);
+      const hop = 7 * progress * (1 - progress); // visual height only
 
       shot.setAttribute("cx", point.x.toFixed(1));
       shot.setAttribute("cy", point.y.toFixed(1));
@@ -321,7 +392,7 @@ function initFieldView() {
       shotShadow.setAttribute("cy", point.y.toFixed(1));
       shotShadow.setAttribute("rx", (8 - hop * 3).toFixed(1));
       shotShadow.setAttribute("ry", (4 - hop * 1.5).toFixed(1));
-      shotShadow.style.opacity = (0.45 - hop * 0.25).toFixed(2);
+      shotShadow.style.opacity = (0.45 - hop * 0.2).toFixed(2);
 
       trailLine.setAttribute("x2", point.x.toFixed(1));
       trailLine.setAttribute("y2", point.y.toFixed(1));
@@ -330,7 +401,8 @@ function initFieldView() {
       if (progress < 1) {
         requestAnimationFrame(frame);
       } else {
-        finishThrow(name, distance, targetPoint);
+        console.log("[shotput] animation finished after", frameCount, "frames - shot now at", point);
+        landShotAt(distance, targetPoint);
       }
     }
 
@@ -346,8 +418,9 @@ function initFieldView() {
   if (stepDown) stepDown.addEventListener("click", () => stepDistance(-0.1));
   if (stepUp) stepUp.addEventListener("click", () => stepDistance(0.1));
 
-  form.addEventListener("submit", (event) => {
+  form.addEventListener("submit", async (event) => {
     event.preventDefault();
+    console.log("[shotput] form submitted");
     clearError();
 
     const raw = distanceInput.value.trim();
@@ -372,15 +445,24 @@ function initFieldView() {
       return;
     }
 
+    const name = resolveAthleteName();
+    console.log("[shotput] validated - starting animation immediately and saving in parallel:", name, distance, "m");
+
+    // The animation starts right away and never waits on the network -
+    // it behaves the same whether the save takes 50ms or 5 seconds.
+    setAthleteNameHint(name);
+    animateThrow(name, distance);
+
     try {
-      const name = resolveAthleteName();
-      setAthleteName(name);
-      animateThrow(name, distance);
+      await apiAddThrow(name, distance);
+      console.log("[shotput] saved to server OK");
+      showSavedResult(name, distance);
     } catch (err) {
-      // Surface unexpected errors on the page itself, not just the
-      // console, so a broken throw is never silent.
-      console.error("Could not record throw:", err);
-      showError("Something went wrong recording that throw. Please try again.");
+      console.error("[shotput] could not record throw:", err);
+      showError(
+        "The throw animated, but saving it to the leaderboard failed: " +
+        (err.message || "please check your connection and try again.")
+      );
     }
   });
 }
@@ -389,7 +471,7 @@ function initFieldView() {
 
 function initResultsView() {
   const clearBtn = document.getElementById("clear-throws");
-  if (!clearBtn) return; // Not on this page (Field View also has a leaderboard table, but no clear button)
+  if (!clearBtn) return; // Not on this page
 
   const leaderboardTbody = document.getElementById("leaderboard-tbody");
   const leaderboardTable = document.getElementById("leaderboard-table");
@@ -404,23 +486,30 @@ function initResultsView() {
   const summaryCurrent = document.getElementById("summary-current");
   const summaryBest = document.getElementById("summary-best");
 
-  function render() {
-    const throws = getThrows();
+  async function render() {
+    let throws;
+    try {
+      throws = await apiGetThrows();
+    } catch (err) {
+      console.error("Could not load results:", err);
+      if (logEmpty) {
+        logEmpty.hidden = false;
+        logEmpty.textContent = "Could not load results. Please refresh the page.";
+      }
+      return;
+    }
+
     const best = getBest(throws);
 
-    // --- Summary ---
-    const distinctAthletes = new Set(throws.map((t) => t.name)).size;
-    summaryAthletes.textContent = String(distinctAthletes);
+    summaryAthletes.textContent = String(new Set(throws.map((t) => t.athleteName)).size);
     summaryCount.textContent = String(throws.length);
     summaryCurrent.textContent = throws.length
-      ? formatDistance(throws[throws.length - 1].distance) + " (" + throws[throws.length - 1].name + ")"
+      ? formatDistance(throws[throws.length - 1].distance) + " (" + throws[throws.length - 1].athleteName + ")"
       : "—";
-    summaryBest.textContent = best ? formatDistance(best.distance) + " (" + best.name + ")" : "—";
+    summaryBest.textContent = best ? formatDistance(best.distance) + " (" + best.athleteName + ")" : "—";
 
-    // --- Leaderboard: ranked by each athlete's best throw ---
     renderLeaderboardTable(leaderboardTbody, leaderboardTable, leaderboardEmpty, throws);
 
-    // --- Full throw log: every attempt, in the order it was recorded ---
     logTbody.innerHTML = "";
 
     if (throws.length === 0) {
@@ -434,14 +523,14 @@ function initResultsView() {
 
     throws.forEach((t, index) => {
       const row = document.createElement("tr");
-      const isBest = best && t.distance === best.distance && t.name === best.name;
+      const isBest = best && t.distance === best.distance && t.athleteName === best.athleteName;
       if (isBest) row.classList.add("is-best");
 
       const numCell = document.createElement("td");
       numCell.textContent = String(index + 1);
 
       const nameCell = document.createElement("td");
-      nameCell.textContent = t.name;
+      nameCell.textContent = t.athleteName;
 
       const distCell = document.createElement("td");
       distCell.textContent = formatDistance(t.distance);
@@ -454,22 +543,29 @@ function initResultsView() {
     });
   }
 
-  clearBtn.addEventListener("click", () => {
-    const confirmed = window.confirm(
-      "Clear all recorded throws? This cannot be undone."
-    );
-    if (confirmed) {
-      clearThrows();
+  clearBtn.addEventListener("click", async () => {
+    const confirmed = window.confirm("Clear all recorded throws for every athlete? This cannot be undone.");
+    if (!confirmed) return;
+    try {
+      await apiClearThrows();
       render();
+    } catch (err) {
+      console.error("Could not clear throws:", err);
     }
   });
 
   render();
 }
 
-if (typeof document !== "undefined") {
-  document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", () => {
+  console.log("[shotput] DOMContentLoaded fired, initialising...");
+  try {
+    renderUserBadge();
     initFieldView();
     initResultsView();
-  });
-}
+    console.log("[shotput] init complete - if this page has a throw form, it's ready");
+  } catch (err) {
+    console.error("[shotput] init failed:", err);
+    showFatalErrorBanner(err.message);
+  }
+});

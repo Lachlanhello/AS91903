@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Barlow+Condensed:wght@600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=6">
+  <link rel="stylesheet" href="/css/style.css?v=7">
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to main content</a>
@@ -24,11 +24,17 @@
       <nav aria-label="Main navigation">
         <ul class="nav-list">
           <li><a href="/">Home</a></li>
-          <li><a href="/field" aria-current="page">Field View</a></li>
+          <li><span class="admin-only" hidden><a href="/field" aria-current="page">Field View</a></span></li>
           <li><a href="/results">Results</a></li>
           <li><a href="/guide">Guide</a></li>
         </ul>
       </nav>
+      <div class="user-badge" id="user-badge" hidden>
+        <span id="user-badge-text"></span>
+        <form method="POST" action="/logout" class="logout-form">
+          <button type="submit" class="btn btn-secondary logout-btn">Log out</button>
+        </form>
+      </div>
     </div>
   </header>
 
@@ -179,6 +185,6 @@
     <p>Shot Put Field Tool — built for athletes, coaches, teachers and spectators.</p>
   </footer>
 
-  <script src="/js/app.js?v=6"></script>
+  <script src="/js/app.js?v=7"></script>
 </body>
 </html>

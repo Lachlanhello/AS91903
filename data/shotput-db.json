@@ -1,0 +1,79 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "username": "admin",
+      "passwordHash": "$2b$10$sxhbHDXQkVIA/pU6kp/DKOvsiFAnNpmCYkX.TFxI81JGbfWyLw7KG",
+      "role": "admin"
+    },
+    {
+      "id": 2,
+      "username": "visitor",
+      "passwordHash": "$2b$10$mOJl6w0Zu2zVNjdaI95Ctukj2tjNC6cIO68zuwnTZ/rV0Czn7m1qC",
+      "role": "visitor"
+    }
+  ],
+  "athletes": [
+    {
+      "id": 1,
+      "name": "Jordan Smith"
+    },
+    {
+      "id": 2,
+      "name": "Amelia Ngata"
+    },
+    {
+      "id": 3,
+      "name": "Kai Walker"
+    }
+  ],
+  "throws": [
+    {
+      "id": 1,
+      "athleteId": 1,
+      "distance": 14.2,
+      "recordedAt": "2026-09-10T23:42:54.369Z",
+      "recordedBy": "admin"
+    },
+    {
+      "id": 2,
+      "athleteId": 1,
+      "distance": 15.85,
+      "recordedAt": "2026-09-10T23:42:54.369Z",
+      "recordedBy": "admin"
+    },
+    {
+      "id": 3,
+      "athleteId": 2,
+      "distance": 16.5,
+      "recordedAt": "2026-09-10T23:42:54.369Z",
+      "recordedBy": "admin"
+    },
+    {
+      "id": 4,
+      "athleteId": 2,
+      "distance": 17.05,
+      "recordedAt": "2026-09-10T23:42:54.369Z",
+      "recordedBy": "admin"
+    },
+    {
+      "id": 5,
+      "athleteId": 2,
+      "distance": 16.1,
+      "recordedAt": "2026-09-10T23:42:54.369Z",
+      "recordedBy": "admin"
+    },
+    {
+      "id": 6,
+      "athleteId": 3,
+      "distance": 13.1,
+      "recordedAt": "2026-09-10T23:42:54.369Z",
+      "recordedBy": "admin"
+    }
+  ],
+  "nextId": {
+    "users": 3,
+    "athletes": 4,
+    "throws": 7
+  }
+}
