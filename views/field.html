@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Barlow+Condensed:wght@600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=7">
+  <link rel="stylesheet" href="/css/style.css?v=8">
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to main content</a>
@@ -24,7 +24,7 @@
       <nav aria-label="Main navigation">
         <ul class="nav-list">
           <li><a href="/">Home</a></li>
-          <li><span class="admin-only" hidden><a href="/field" aria-current="page">Field View</a></span></li>
+          <li class="admin-only" hidden><a href="/field" aria-current="page">Field View</a></li>
           <li><a href="/results">Results</a></li>
           <li><a href="/guide">Guide</a></li>
         </ul>
@@ -57,20 +57,15 @@
         <h2 id="field-heading" class="visually-hidden">Shot put field diagram</h2>
 
         <div class="field-container">
-          <!-- The field graphic below (grass, apron, sector lines, rings,
-               throwing circle) is plain static SVG markup - it always
-               renders, even if JavaScript fails to run. Only the shot,
-               its trail/shadow, and the landing marker near the bottom
-               are moved by app.js. Their starting coordinates already
-               match the throwing circle below. -->
-          <svg id="field-svg" viewBox="0 0 760 460" role="img" aria-labelledby="svg-title svg-desc" preserveAspectRatio="xMidYMid meet">
+          <svg id="field-svg" viewBox="0 0 900 420" preserveAspectRatio="xMidYMid meet"
+               role="img" aria-labelledby="svg-title svg-desc">
             <title id="svg-title">Shot put field diagram</title>
             <desc id="svg-desc">
-              A green shot put field viewed from above the throwing circle,
-              with distance markers at 5, 10, 15, 20 and 25 metres. When a
-              throw is recorded, the shot travels along a trail and settles
-              at the landing distance, and the exact distance is shown as
-              text below the field.
+              A green shot put field seen from above the throwing circle,
+              with distance rings at 5, 10, 15, 20 and 25 metres. Each
+              recorded throw leaves a permanent dot where it landed, and
+              the furthest throw is marked with a star. Every distance is
+              also listed as text in the leaderboard beside this diagram.
             </desc>
 
             <defs>
@@ -80,46 +75,26 @@
                 <stop offset="100%" stop-color="#43474b" />
               </radialGradient>
               <pattern id="grass-dots" width="14" height="14" patternUnits="userSpaceOnUse">
-                <rect width="14" height="14" style="fill:var(--color-turf)" />
+                <rect width="14" height="14" fill="#2f7d3e" />
                 <circle cx="3" cy="3" r="1" fill="rgba(255,255,255,0.10)" />
                 <circle cx="10" cy="10" r="1" fill="rgba(255,255,255,0.07)" />
               </pattern>
             </defs>
 
-            <rect class="grass" x="0" y="0" width="760" height="460" />
-            <rect class="apron" x="0" y="0" width="138" height="460" />
+            <!-- Built at runtime by buildField() in app.js, so the field
+                 graphic and the throw maths always agree on exactly where
+                 each distance sits. -->
+            <g id="field-graphic"></g>
 
-            <line class="sector-line" x1="92" y1="230" x2="683.4" y2="44.0" />
-            <line class="sector-line" x1="92" y1="230" x2="683.4" y2="416.0" />
+            <!-- A permanent marker for every throw ever recorded -->
+            <g id="markers-layer"></g>
 
-            <path class="ring" d="M 181.0 202.0 A 93.3 93.3 0 0 1 181.0 258.0" />
-            <text class="ring-label" x="185.3" y="220.0">5 m</text>
-
-            <path class="ring" d="M 270.1 174.0 A 186.7 186.7 0 0 1 270.1 286.0" />
-            <text class="ring-label" x="278.7" y="220.0">10 m</text>
-
-            <path class="ring" d="M 359.1 146.0 A 280.0 280.0 0 0 1 359.1 314.0" />
-            <text class="ring-label" x="372.0" y="220.0">15 m</text>
-
-            <path class="ring" d="M 448.1 118.0 A 373.3 373.3 0 0 1 448.1 342.0" />
-            <text class="ring-label" x="465.3" y="220.0">20 m</text>
-
-            <path class="ring ring-far" d="M 537.2 90.0 A 466.7 466.7 0 0 1 537.2 370.0" />
-            <text class="ring-label ring-label-far" x="558.7" y="220.0">25 m</text>
-
-            <circle class="throw-circle" cx="92" cy="230" r="24" />
-            <line class="toe-line" x1="92" y1="206" x2="92" y2="254" />
-
-            <rect class="field-border" x="2" y="2" width="756" height="456" rx="16" />
-
-            <!-- Flight elements: positioned by app.js, but given safe
-                 starting coordinates here so they are visible even
-                 before any JavaScript runs. -->
-            <line id="trail-line" class="trail-line" x1="92" y1="230" x2="92" y2="230" stroke-linecap="round" />
-            <ellipse id="shot-shadow" class="shot-shadow" cx="92" cy="230" rx="8" ry="4" />
-            <circle id="shot" cx="92" cy="230" r="9" fill="url(#ball-gradient)" />
-            <circle id="landing-pulse" class="landing-pulse" cx="92" cy="230" r="8" />
-            <text id="landing-label" x="92" y="230"></text>
+            <!-- The flying shot: trail, shadow, then the ball on top -->
+            <g id="flight-layer">
+              <line id="trail-line" />
+              <ellipse id="shot-shadow" rx="7" ry="3.5" />
+              <circle id="shot-ball" r="9" fill="url(#ball-gradient)" />
+            </g>
           </svg>
         </div>
       </section>
@@ -138,18 +113,11 @@
               <label for="distance-input">Throw distance (metres)</label>
               <div class="distance-stepper">
                 <button type="button" id="distance-step-down" class="stepper-btn" aria-label="Decrease distance by 0.1 metres">−</button>
-                <input
-                  type="number"
-                  id="distance-input"
-                  name="distance"
-                  step="0.01"
-                  min="0"
-                  inputmode="decimal"
-                  aria-describedby="distance-hint distance-error"
-                >
+                <input type="number" id="distance-input" name="distance" step="0.01" min="0"
+                       inputmode="decimal" aria-describedby="distance-hint distance-error">
                 <button type="button" id="distance-step-up" class="stepper-btn" aria-label="Increase distance by 0.1 metres">+</button>
               </div>
-              <p id="distance-hint" class="hint">Enter a distance between 0.01 and 30 metres, or use the buttons to adjust by 0.1 m.</p>
+              <p id="distance-hint" class="hint">Enter a distance between 0.01 and 30 metres, or use the − / + buttons to adjust by 0.1 m.</p>
               <p id="distance-error" class="error-text" role="alert"></p>
             </div>
 
@@ -185,6 +153,6 @@
     <p>Shot Put Field Tool — built for athletes, coaches, teachers and spectators.</p>
   </footer>
 
-  <script src="/js/app.js?v=7"></script>
+  <script src="/js/app.js?v=8"></script>
 </body>
 </html>

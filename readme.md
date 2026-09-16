@@ -1,51 +1,68 @@
 # Shot Put Field Tool
 
-## Introduction
+An accessible browser-based tool for recording and understanding shot put
+throws, built for athletes, coaches, teachers and spectators.
 
-Shot Put Field Tool is an accessible browser-based companion for recording and understanding shot put throws. Users can enter an athlete's name and throw distance, see the throw represented on a field diagram, and review recorded results and their personal best.
+## Running the app
 
-The site includes four views:
+```powershell
+npm install
+npm start
+```
 
-- **Home**: An overview of the tool and links to the main features.
-- **Field View**: Enter and record throw distances with a visual field animation.
-- **Results**: Review all recorded throws, including the best distance.
-- **Guide**: Read instructions about using the tool and understanding distances.
+Then open **http://localhost:3000**.
 
-Recorded throws and the athlete name are saved in the browser's local storage, so they remain available when you move between pages in the same browser.
+If you see `EADDRINUSE`, an old copy of the server is still running:
 
-## Setup
+```powershell
+netstat -ano | findstr :3000
+taskkill /PID <the number in the last column> /F
+```
 
-### Requirements
+## Accounts
 
-- A modern web browser
-- Node.js and npm, if using the local development server
+| Role    | Username  | Password         | Can do                          |
+|---------|-----------|------------------|---------------------------------|
+| Admin   | `admin`   | `ShotPut2026!`   | Record throws, clear throws, everything below |
+| Visitor | `visitor` | `Spectator2026!` | View leaderboard, results, guide |
 
-### Option 1: Run with npm
+Visitors are blocked from recording throws both in the interface (the Field
+View link is hidden) **and** at the API level (a direct POST returns 403), so
+the restriction is real security, not just a hidden button.
 
-1. Open a terminal in the project folder.
-2. Install the project dependencies:
+## Pages
 
-	```powershell
-	npm install
-	```
+- `/login` — sign in
+- `/` — home
+- `/field` — record a throw and watch the animation (admin only)
+- `/results` — leaderboard + full throw log
+- `/guide` — help and accessibility information
 
-3. Start the site:
+## How the data works
 
-	```powershell
-	npm start
-	```
+Throws are stored on the **server** in `data/shotput-db.json`, so every
+logged-in user sees the same shared leaderboard. The file is created and
+seeded automatically on first run.
 
-4. The site will open at `http://localhost:8080`. If it does not open automatically, copy that address into your browser.
+`db.js` uses a JSON file rather than SQLite because packages like
+`better-sqlite3` need a compiled native binary, which often fails to install
+on managed school laptops. It keeps the same shape as a database (separate
+users / athletes / throws tables, ids, relationships, query functions), so it
+can be swapped for real SQL later without changing any calling code.
 
-### Option 2: Open the site directly
+## Project files
 
-Open `views/index.html` in a modern web browser. You can then use the navigation links to move between the Home, Field View, Results, and Guide pages.
+| File | Purpose |
+|---|---|
+| `server.js` | Express server: sessions, login, role-protected routes, JSON API |
+| `db.js` | Data store (users, athletes, throws) |
+| `views/*.html` | The five pages |
+| `public/js/app.js` | Field animation, validation, leaderboard rendering |
+| `public/css/style.css` | All styling |
 
-## Project Files
+## Troubleshooting
 
-- `views/index.html`: Home page
-- `views/field.html`: Throw entry and field view
-- `views/results.html`: Recorded results
-- `views/guide.html`: User guide
-- `app.js`: Throw storage, validation, animation, and results logic
-- `public/css/style.css`: Site styling and responsive layout
+Open the browser console (F12 → Console). The app logs every step with a
+`[shotput]` prefix — page init, field built, throw saved, animation frames,
+leaderboard rendered. If a script fails, a red banner appears at the top of
+the page rather than failing silently.

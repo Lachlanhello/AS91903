@@ -24,7 +24,13 @@ app.use(session({
   secret: "shot-put-field-tool-dev-secret", // fine for a school demo; not a production secret
   resave: false,
   saveUninitialized: false,
-  cookie: { maxAge: 1000 * 60 * 60 * 8 }, // 8 hours
+  cookie: {
+    maxAge: 1000 * 60 * 60 * 8, // 8 hours
+    httpOnly: true,
+    sameSite: "lax",
+    secure: false, // this app runs over plain http://localhost, so the
+                   // cookie must NOT be marked secure or it is never sent
+  },
 }));
 
 // CSS and JS are served directly from /public, e.g. /css/style.css
@@ -32,12 +38,52 @@ app.use(express.static(path.join(__dirname, "public")));
 
 const VIEWS_DIR = path.join(__dirname, "views");
 
-app.get("/", (req, res) => {
-  res.sendFile(path.join(VIEWS_DIR, "index.html"));
-});
+/* =========================================================
+   Middleware
+   These four functions were the missing piece that stopped
+   the server starting at all: the routes below referred to
+   them, but they were never actually written. "require*"
+   guards a PAGE (and redirects a browser); "require*Api"
+   guards a JSON endpoint (and returns a status code, because
+   a fetch() call can't follow a redirect to a login page).
+   ========================================================= */
 
-app.get("/field", (req, res) => {
-  res.sendFile(path.join(VIEWS_DIR, "field.html"));
+// Is anyone logged in at all?
+function requireAuth(req, res, next) {
+  if (req.session && req.session.user) return next();
+  return res.redirect("/login");
+}
+
+// Logged in AND an admin? (only admins may record throws)
+function requireAdmin(req, res, next) {
+  if (req.session && req.session.user && req.session.user.role === "admin") return next();
+  if (req.session && req.session.user) return res.redirect("/results"); // visitor: send somewhere useful
+  return res.redirect("/login");
+}
+
+function requireAuthApi(req, res, next) {
+  if (req.session && req.session.user) return next();
+  return res.status(401).json({ error: "Please log in." });
+}
+
+function requireAdminApi(req, res, next) {
+  if (req.session && req.session.user && req.session.user.role === "admin") return next();
+  return res.status(403).json({ error: "Only an admin account can record throws." });
+}
+
+// Small helper so the page routes below read cleanly.
+function sendView(filename) {
+  return (req, res) => res.sendFile(path.join(VIEWS_DIR, filename));
+}
+
+/* ---------- Login / logout ---------- */
+
+app.get("/login", (req, res) => {
+  // Already logged in? Skip the login page.
+  if (req.session && req.session.user) {
+    return res.redirect(req.session.user.role === "admin" ? "/field" : "/results");
+  }
+  res.sendFile(path.join(VIEWS_DIR, "login.html"));
 });
 
 app.post("/login", (req, res) => {

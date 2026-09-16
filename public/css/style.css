@@ -386,75 +386,24 @@ input[aria-invalid="true"] { border-color: var(--color-error); background: var(-
    size even on older browsers that don't support aspect-ratio -
    otherwise the container can silently collapse to its min-height
    only, making the animation look tiny or "broken". 460/760 = 60.5%. */
-.field-container {
-  position: relative;
-  border-radius: 14px;
-  overflow: hidden;
-  border: 1px solid var(--color-border);
-  width: 100%;
-  height: 0;
-  padding-bottom: 60.5%;
-  min-height: 340px;
-}
-#field-svg { display: block; position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
 
 @media (max-width: 900px) {
   .field-layout { grid-template-columns: 1fr; }
 }
 
 /* Field graphic (built by buildField() in app.js) */
-.grass { fill: url(#grass-dots); }
-.apron { fill: var(--color-apron); }
-.sector-line { stroke: rgba(255, 255, 255, 0.85); stroke-width: 2; stroke-linecap: round; }
-.ring { fill: none; stroke: rgba(255, 255, 255, 0.55); stroke-width: 2; }
-.ring-far { stroke: var(--color-led); stroke-width: 2.5; }
-.ring-label { fill: rgba(255, 255, 255, 0.8); font-family: var(--font-mono); font-size: 14px; font-weight: 600; text-anchor: middle; }
-.ring-label-far { fill: var(--color-led); }
-.throw-circle { fill: var(--color-apron); stroke: #ffffff; stroke-width: 3; }
-.toe-line { stroke: #ffffff; stroke-width: 3; }
-.field-border { fill: none; stroke: rgba(255, 255, 255, 0.3); stroke-width: 1; }
 
 /* The flying / resting shot */
-#shot { stroke: rgba(20, 26, 20, 0.35); stroke-width: 1; }
 
-.shot-shadow { fill: rgba(18, 24, 26, 0.4); opacity: 0; }
 
 /* Trail line: traces the shot's path as it travels, so the motion
    itself carries information rather than being purely decorative.
    It stays visible after landing as a record of the throw taken. */
-.trail-line {
-  stroke: rgba(255, 255, 255, 0.65);
-  stroke-width: 2;
-  stroke-dasharray: 5 6;
-  opacity: 0;
-  transition: opacity 200ms ease;
-}
 .trail-line.is-visible { opacity: 1; }
 
 /* Landing pulse: a brief ripple confirming exactly where the throw landed */
-.landing-pulse {
-  fill: none;
-  stroke: var(--color-clay);
-  stroke-width: 2;
-  opacity: 0;
-  transform-origin: center;
-  transform-box: fill-box;
-  pointer-events: none;
-}
 .landing-pulse.is-pulsing { animation: landing-pulse 700ms ease-out; }
-@keyframes landing-pulse {
-  0% { opacity: 0.9; transform: scale(0.4); }
-  100% { opacity: 0; transform: scale(3); }
-}
 
-#landing-label {
-  font-family: var(--font-mono);
-  font-weight: 700;
-  font-size: 15px;
-  fill: var(--color-clay-text);
-  opacity: 0;
-  transition: opacity 300ms ease;
-}
 #landing-label.is-visible { opacity: 1; }
 
 /* ---------- Scoreboard component ---------- */
@@ -585,4 +534,116 @@ tr.is-best td { font-weight: 700; }
   }
   .landing-pulse.is-pulsing { animation: none; opacity: 0.9; }
   html { scroll-behavior: auto; }
+}
+/* =========================================================
+   FIELD DIAGRAM
+   The shapes below are drawn at runtime by buildField() in
+   app.js; these rules give them their colours. Keeping the
+   colours here (not in the JS) means the field follows the
+   same palette tokens as the rest of the site.
+   ========================================================= */
+
+.field-container {
+  position: relative;
+  width: 100%;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  background: var(--color-turf);
+  /* padding-bottom keeps the 900x420 ratio on every browser,
+     including older ones that don't support aspect-ratio. */
+  height: 0;
+  padding-bottom: 46.6%;
+  min-height: 300px;
+}
+#field-svg {
+  display: block;
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+}
+
+.grass { fill: url(#grass-dots); }
+.apron { fill: var(--color-apron, #8a4a2e); }
+.field-border { fill: none; stroke: rgba(255,255,255,0.35); stroke-width: 3; }
+
+.sector-line { stroke: rgba(255,255,255,0.85); stroke-width: 2; stroke-linecap: round; }
+
+.ring { fill: none; stroke: rgba(255,255,255,0.5); stroke-width: 2; }
+.ring-far { stroke: var(--color-led); stroke-width: 2.5; }
+
+.ring-label {
+  fill: rgba(255,255,255,0.8);
+  font-family: var(--font-mono);
+  font-size: 15px;
+  font-weight: 600;
+  text-anchor: middle;
+}
+.ring-label-far { fill: var(--color-led); }
+
+.throw-circle { fill: var(--color-apron, #8a4a2e); stroke: #fff; stroke-width: 5; }
+.toe-line { stroke: #fff; stroke-width: 3; }
+.start-label {
+  fill: rgba(255,255,255,0.9);
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-anchor: middle;
+}
+
+/* ---------- The flying shot ---------- */
+
+#flight-layer { transition: opacity 0.3s ease; }
+#trail-line {
+  stroke: rgba(255,255,255,0.65);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-dasharray: 5 6;
+}
+#shot-shadow { fill: rgba(0,0,0,0.4); }
+#shot-ball { stroke: rgba(20,26,20,0.35); stroke-width: 1; }
+
+/* ---------- Landing markers: one per throw, kept permanently ---------- */
+
+.marker-dot {
+  fill: #7db8ff;
+  stroke: #0b1830;
+  stroke-width: 2;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.throw-marker.is-best .marker-dot { fill: var(--color-led); stroke: #4a3600; }
+.marker-star {
+  fill: var(--color-led);
+  font-size: 16px;
+  text-anchor: middle;
+}
+.throw-marker.is-newest .marker-dot { animation: markerPop 0.45s ease-out; }
+@keyframes markerPop {
+  from { transform: scale(0.2); opacity: 0.4; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+
+.landing-pulse {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 2;
+  opacity: 0.85;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: landingPulse 0.6s ease-out forwards;
+  pointer-events: none;
+}
+@keyframes landingPulse {
+  from { transform: scale(0.3); opacity: 0.9; }
+  to   { transform: scale(3.4); opacity: 0; }
+}
+
+/* Respect a reduced-motion preference: no marker pop, no pulse.
+   app.js separately skips the whole flight animation. */
+@media (prefers-reduced-motion: reduce) {
+  .throw-marker.is-newest .marker-dot { animation: none; }
+  .landing-pulse { animation: none; opacity: 0; }
+  #flight-layer { transition: none; }
 }
