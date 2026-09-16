@@ -31,43 +31,13 @@ app.use(session({
 app.use(express.static(path.join(__dirname, "public")));
 
 const VIEWS_DIR = path.join(__dirname, "views");
-const sendView = (name) => (req, res) => res.sendFile(path.join(VIEWS_DIR, name));
 
-/* ---------- Auth middleware ---------- */
+app.get("/", (req, res) => {
+  res.sendFile(path.join(VIEWS_DIR, "index.html"));
+});
 
-function requireAuth(req, res, next) {
-  if (req.session && req.session.user) return next();
-  return res.redirect("/login");
-}
-
-function requireAdmin(req, res, next) {
-  if (req.session && req.session.user && req.session.user.role === "admin") return next();
-  if (req.session && req.session.user) return res.redirect("/results"); // logged in, wrong role
-  return res.redirect("/login"); // not logged in at all
-}
-
-// The /api/* routes are called via fetch() from app.js, not full page
-// navigations - a redirect response there would hand back an HTML
-// login page instead of JSON, which breaks response.json() on the
-// client. These return proper JSON error statuses instead.
-function requireAuthApi(req, res, next) {
-  if (req.session && req.session.user) return next();
-  return res.status(401).json({ error: "Please log in." });
-}
-
-function requireAdminApi(req, res, next) {
-  if (req.session && req.session.user && req.session.user.role === "admin") return next();
-  if (req.session && req.session.user) {
-    return res.status(403).json({ error: "Only admin accounts can do that." });
-  }
-  return res.status(401).json({ error: "Please log in." });
-}
-
-/* ---------- Auth routes ---------- */
-
-app.get("/login", (req, res) => {
-  if (req.session && req.session.user) return res.redirect("/");
-  res.sendFile(path.join(VIEWS_DIR, "login.html"));
+app.get("/field", (req, res) => {
+  res.sendFile(path.join(VIEWS_DIR, "field.html"));
 });
 
 app.post("/login", (req, res) => {
