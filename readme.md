@@ -24,17 +24,18 @@ taskkill /PID <the number in the last column> /F
 | Role    | Username  | Password         | Can do                          |
 |---------|-----------|------------------|---------------------------------|
 | Admin   | `admin`   | `ShotPut2026!`   | Record throws, clear throws, everything below |
-| Visitor | `visitor` | `Spectator2026!` | View leaderboard, results, guide |
+| Visitor | `visitor` | `Spectator2026!` | View Field View, enter athletes, view results and guide |
 
-Visitors are blocked from recording throws both in the interface (the Field
-View link is hidden) **and** at the API level (a direct POST returns 403), so
-the restriction is real security, not just a hidden button.
+Visitors can open Field View and choose an event, but the throw controls are
+read-only. They are blocked from recording throws at the API level (a direct
+POST returns 403). Admins record throws into a selected event; visitors enter
+athletes on the Events page.
 
 ## Pages
 
 - `/login` — sign in
 - `/` — home
-- `/field` — record a throw and watch the animation (admin only)
+- `/field` — choose an event and record throws (admin only for recording; visitors can view)
 - `/results` — leaderboard + full throw log
 - `/guide` — help and accessibility information
 

@@ -75,11 +75,11 @@ async function apiGetThrows() {
   return res.json();
 }
 
-async function apiAddThrow(athleteName, distance) {
+async function apiAddThrow(athleteName, distance, eventId) {
   const res = await fetch("/api/throws", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ athleteName, distance }),
+    body: JSON.stringify({ athleteName, distance, eventId }),
   });
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
@@ -91,6 +91,76 @@ async function apiAddThrow(athleteName, distance) {
 async function apiClearThrows() {
   const res = await fetch("/api/throws/clear", { method: "POST" });
   if (!res.ok) throw new Error("Could not clear throws.");
+}
+
+
+/* ---------- Events API ---------- */
+
+async function apiGetEvents() {
+  const res = await fetch("/api/events");
+  if (!res.ok) throw new Error("Could not load events from the server.");
+  return res.json();
+}
+
+async function apiCreateEvent(name, eventDate) {
+  const res = await fetch("/api/events", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name, eventDate }),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || "Could not create that event.");
+  }
+  return res.json();
+}
+
+async function apiSetEventStatus(eventId, status) {
+  const res = await fetch("/api/events/" + eventId + "/status", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ status }),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || "Could not update that event.");
+  }
+  return res.json();
+}
+
+async function apiDeleteEvent(eventId) {
+  const res = await fetch("/api/events/" + eventId, { method: "DELETE" });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || "Could not delete that event.");
+  }
+}
+
+async function apiGetEntries(eventId) {
+  const res = await fetch("/api/events/" + eventId + "/entries");
+  if (!res.ok) throw new Error("Could not load entries for that event.");
+  return res.json();
+}
+
+async function apiAddEntry(eventId, athleteName, ageGroup, representing) {
+  const res = await fetch("/api/events/" + eventId + "/entries", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ athleteName, ageGroup, representing }),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || "Could not add that entry.");
+  }
+  return res.json();
+}
+
+async function apiDeleteEntry(entryId) {
+  const res = await fetch("/api/entries/" + entryId, { method: "DELETE" });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || "Could not remove that entry.");
+  }
 }
 
 /* ---------- Header badge (who am I, and can I record?) ---------- */
@@ -318,6 +388,9 @@ function initFieldView() {
   const errorEl = document.getElementById("distance-error");
   const resultEl = document.getElementById("throw-result");
   const motionNoteEl = document.getElementById("motion-note");
+  const eventSelect = document.getElementById("throw-event-select");
+  const eventStatusEl = document.getElementById("throw-event-status");
+  const readOnlyNote = document.getElementById("field-readonly-note");
   const throwButton = form.querySelector('button[type="submit"]');
 
   const fieldGraphic = document.getElementById("fieldGraphic");
@@ -332,7 +405,7 @@ function initFieldView() {
   const leaderboardEmpty = document.getElementById("leaderboard-empty");
 
   // Fail loudly if the HTML and this file have drifted apart.
-  const required = { fieldGraphic, markersLayer, flightLayer, shotBall, shotShadow, trailLine, distanceInput, errorEl, resultEl };
+  const required = { fieldGraphic, markersLayer, flightLayer, shotBall, shotShadow, trailLine, distanceInput, errorEl, resultEl, eventSelect };
   Object.entries(required).forEach(([key, el]) => {
     if (!el) throw new Error("Field View is missing required element: " + key);
   });
@@ -348,8 +421,57 @@ function initFieldView() {
   // redrawn. Each gets an angle so it keeps the same spot on the field.
   let throws = [];
   let isAnimating = false;
+  let isAdmin = false;
+  let selectedEventId = "";
 
   nameInput.value = getAthleteNameHint();
+
+  function setThrowControlsDisabled(disabled) {
+    [nameInput, distanceInput, stepDown, stepUp, throwButton].forEach((control) => {
+      if (control) control.disabled = disabled;
+    });
+  }
+
+  function setEventStatus(message) {
+    if (eventStatusEl) eventStatusEl.textContent = message;
+  }
+
+  async function loadFieldEvents() {
+    try {
+      const me = await apiGetMe();
+      isAdmin = me.role === "admin";
+      if (readOnlyNote) readOnlyNote.hidden = isAdmin;
+      setThrowControlsDisabled(!isAdmin);
+
+      const events = await apiGetEvents();
+      eventSelect.innerHTML = "";
+      const placeholder = document.createElement("option");
+      placeholder.value = "";
+      placeholder.textContent = events.length ? "Select an event..." : "No events available";
+      eventSelect.appendChild(placeholder);
+
+      events.forEach((event) => {
+        const option = document.createElement("option");
+        option.value = String(event.id);
+        option.textContent = event.name + (event.eventDate ? " — " + event.eventDate : "");
+        eventSelect.appendChild(option);
+      });
+
+      if (events.length === 0) {
+        setEventStatus(isAdmin
+          ? "Create an event on the Events page before recording throws."
+          : "No events have been created yet.");
+      } else {
+        setEventStatus(isAdmin
+          ? "Choose the event this throw belongs to."
+          : "Choose an event to view its throws.");
+      }
+      await loadExistingThrows();
+    } catch (err) {
+      console.error("[shotput] could not load Field View events:", err);
+      showFatalErrorBanner("Could not load events: " + err.message);
+    }
+  }
 
   /* ---------- Landing markers: one dot per throw, kept permanently ---------- */
 
@@ -506,10 +628,13 @@ function initFieldView() {
       const serverThrows = await apiGetThrows();
       // Give each existing throw a stable angle so its marker doesn't
       // jump around every time the page is reloaded.
-      throws = serverThrows.map((t) => ({ ...t, angle: randomAngle() }));
+      const eventThrows = selectedEventId
+        ? serverThrows.filter((t) => String(t.eventId) === selectedEventId)
+        : [];
+      throws = eventThrows.map((t) => ({ ...t, angle: randomAngle() }));
       renderMarkers(null);
       renderLeaderboardTable(leaderboardTbody, leaderboardTable, leaderboardEmpty, throws);
-      console.log("[shotput] loaded", throws.length, "existing throw(s) from server");
+      console.log("[shotput] loaded", throws.length, "throw(s) for event", selectedEventId || "none");
     } catch (err) {
       console.error("[shotput] could not load throws:", err);
       showFatalErrorBanner("Could not load existing throws: " + err.message);
@@ -527,11 +652,32 @@ function initFieldView() {
   if (stepDown) stepDown.addEventListener("click", () => stepDistance(-0.1));
   if (stepUp) stepUp.addEventListener("click", () => stepDistance(0.1));
 
+  eventSelect.addEventListener("change", async () => {
+    selectedEventId = eventSelect.value;
+    setThrowControlsDisabled(!isAdmin || !selectedEventId);
+    if (selectedEventId) {
+      const selected = eventSelect.options[eventSelect.selectedIndex];
+      setEventStatus(isAdmin
+        ? "Recording throws for " + selected.textContent + "."
+        : "Viewing throws for " + selected.textContent + ".");
+    } else {
+      setEventStatus(isAdmin ? "Choose an event before recording a throw." : "Choose an event to view its throws.");
+    }
+    await loadExistingThrows();
+  });
+
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     if (isAnimating) return; // don't queue throws on top of each other
     console.log("[shotput] form submitted");
     clearError();
+
+    if (!isAdmin) return showError("Only an admin can record throws.");
+    if (!selectedEventId) {
+      setEventStatus("Choose an event before recording a throw.");
+      eventSelect.focus();
+      return;
+    }
 
     const raw = distanceInput.value.trim();
     if (raw === "") return showError("Enter a throw distance before recording.");
@@ -548,7 +694,7 @@ function initFieldView() {
     try {
       // Save to the server FIRST, so nothing is ever animated for a
       // throw that wasn't actually recorded.
-      const saved = await apiAddThrow(name, distance);
+      const saved = await apiAddThrow(name, distance, selectedEventId);
       console.log("[shotput] saved to server:", saved);
       setAthleteNameHint("");
       nameInput.value = "";
@@ -579,7 +725,8 @@ function initFieldView() {
 
   positionFlightAtOrigin();
   setFlightVisible(false);
-  loadExistingThrows();
+  setThrowControlsDisabled(true);
+  loadFieldEvents();
 }
 
 /* =========================================================
@@ -681,6 +828,451 @@ function initResultsView() {
   render();
 }
 
+
+/* =========================================================
+   EVENTS VIEW
+  Admins create/open/close/delete events and record throws. Visitors
+  enter an open event with a name, age group and who they represent.
+   ========================================================= */
+
+const AGE_GROUPS = [
+  { value: "junior",       label: "Junior" },
+  { value: "intermediate", label: "Intermediate" },
+  { value: "senior",       label: "Senior" },
+];
+
+function ageGroupLabel(value) {
+  const found = AGE_GROUPS.find((g) => g.value === value);
+  return found ? found.label : value;
+}
+
+function initEventsView() {
+  const list = document.getElementById("events-list");
+  if (!list) return; // not the events page
+  console.log("[shotput] initialising Events View...");
+
+  const emptyEl = document.getElementById("events-empty");
+  const createForm = document.getElementById("create-event-form");
+  const createCard = document.getElementById("create-event-card");
+  const nameInput = document.getElementById("event-name");
+  const dateInput = document.getElementById("event-date");
+  const nameError = document.getElementById("event-name-error");
+  const createStatus = document.getElementById("create-event-status");
+
+  let isAdmin = false;
+
+  /* ---------- One card per event ---------- */
+
+  function buildEventCard(event) {
+    const card = document.createElement("section");
+    card.className = "card event-card";
+    card.setAttribute("aria-labelledby", "event-heading-" + event.id);
+
+    /* Header: name, status, date, entry count */
+    const head = document.createElement("div");
+    head.className = "event-head";
+
+    const heading = document.createElement("h3");
+    heading.id = "event-heading-" + event.id;
+    heading.textContent = event.name;
+
+    // Status is shown as a word, never colour alone.
+    const status = document.createElement("span");
+    status.className = "event-status " + (event.status === "open" ? "is-open" : "is-closed");
+    status.textContent = event.status === "open" ? "Entries open" : "Entries closed";
+
+    head.append(heading, status);
+
+    const meta = document.createElement("p");
+    meta.className = "event-meta";
+    const bits = [];
+    if (event.eventDate) bits.push(event.eventDate);
+    bits.push(event.entryCount === 1 ? "1 entry" : event.entryCount + " entries");
+    meta.textContent = bits.join(" · ");
+
+    card.append(head, meta);
+
+    /* Admin controls */
+    if (isAdmin) {
+      const controls = document.createElement("div");
+      controls.className = "event-controls";
+
+      const toggle = document.createElement("button");
+      toggle.type = "button";
+      toggle.className = "btn btn-secondary";
+      toggle.textContent = event.status === "open" ? "Close entries" : "Reopen entries";
+      toggle.addEventListener("click", async () => {
+        toggle.disabled = true;
+        try {
+          await apiSetEventStatus(event.id, event.status === "open" ? "closed" : "open");
+          await render();
+        } catch (err) {
+          window.alert(err.message);
+          toggle.disabled = false;
+        }
+      });
+
+      const del = document.createElement("button");
+      del.type = "button";
+      del.className = "btn btn-secondary";
+      del.textContent = "Delete event";
+      del.addEventListener("click", async () => {
+        const ok = window.confirm(
+          'Delete "' + event.name + '" and all ' + event.entryCount +
+          " of its entries? This cannot be undone."
+        );
+        if (!ok) return;
+        del.disabled = true;
+        try {
+          await apiDeleteEvent(event.id);
+          await render();
+        } catch (err) {
+          window.alert(err.message);
+          del.disabled = false;
+        }
+      });
+
+      controls.append(toggle, del);
+      card.appendChild(controls);
+    }
+
+    /* Only visitors may enter athletes. */
+    if (event.status === "open" && !isAdmin) {
+      card.appendChild(buildEntryForm(event));
+    } else if (event.status === "open" && isAdmin) {
+      const adminNote = document.createElement("p");
+      adminNote.className = "hint";
+      adminNote.textContent = "Admins record throws in Field View. Visitors enter athletes here.";
+      card.appendChild(adminNote);
+    } else {
+      const closedNote = document.createElement("p");
+      closedNote.className = "hint";
+      closedNote.textContent = "This event is not accepting new entries.";
+      card.appendChild(closedNote);
+    }
+
+    /* The entry list for this event */
+    const entriesWrap = document.createElement("div");
+    entriesWrap.className = "event-entries";
+    entriesWrap.id = "entries-" + event.id;
+    const loading = document.createElement("p");
+    loading.className = "hint";
+    loading.textContent = "Loading entries…";
+    entriesWrap.appendChild(loading);
+    card.appendChild(entriesWrap);
+
+    loadEntries(event, entriesWrap);
+    return card;
+  }
+
+  /* ---------- Entry form ---------- */
+
+  function buildEntryForm(event) {
+    const form = document.createElement("form");
+    form.className = "entry-form";
+    form.noValidate = true;
+
+    const legendId = "entry-legend-" + event.id;
+    const fieldset = document.createElement("fieldset");
+    fieldset.className = "entry-fieldset";
+    const legend = document.createElement("legend");
+    legend.id = legendId;
+    legend.textContent = "Enter this event";
+    fieldset.appendChild(legend);
+
+    // --- Athlete name ---
+    const nameId = "entry-name-" + event.id;
+    const nameGroup = document.createElement("div");
+    nameGroup.className = "field-group";
+    const nameLabel = document.createElement("label");
+    nameLabel.setAttribute("for", nameId);
+    nameLabel.textContent = "Athlete name";
+    const name = document.createElement("input");
+    name.type = "text";
+    name.id = nameId;
+    name.maxLength = 60;
+    name.autocomplete = "name";
+    name.placeholder = "e.g. Jordan Smith";
+    nameGroup.append(nameLabel, name);
+
+    // --- Age group ---
+    const ageId = "entry-age-" + event.id;
+    const ageGroup = document.createElement("div");
+    ageGroup.className = "field-group";
+    const ageLabel = document.createElement("label");
+    ageLabel.setAttribute("for", ageId);
+    ageLabel.textContent = "Age group";
+    const age = document.createElement("select");
+    age.id = ageId;
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = "Choose an age group…";
+    age.appendChild(placeholder);
+    AGE_GROUPS.forEach((g) => {
+      const opt = document.createElement("option");
+      opt.value = g.value;
+      opt.textContent = g.label;
+      age.appendChild(opt);
+    });
+    ageGroup.append(ageLabel, age);
+
+    // --- Representing ---
+    const repId = "entry-rep-" + event.id;
+    const repGroup = document.createElement("div");
+    repGroup.className = "field-group";
+    const repLabel = document.createElement("label");
+    repLabel.setAttribute("for", repId);
+    repLabel.textContent = "Representing";
+    const rep = document.createElement("input");
+    rep.type = "text";
+    rep.id = repId;
+    rep.maxLength = 60;
+    rep.placeholder = "e.g. Wairarapa College";
+    const repHint = document.createElement("p");
+    repHint.className = "hint";
+    repHint.textContent = "The school, club or team the athlete is competing for.";
+    repGroup.append(repLabel, rep, repHint);
+
+    // --- Error + submit ---
+    const error = document.createElement("p");
+    error.className = "error-text";
+    error.setAttribute("role", "alert");
+
+    const submit = document.createElement("button");
+    submit.type = "submit";
+    submit.className = "btn btn-primary";
+    submit.textContent = "Add entry";
+
+    const result = document.createElement("p");
+    result.className = "entry-result";
+    result.setAttribute("aria-live", "polite");
+
+    fieldset.append(nameGroup, ageGroup, repGroup, error, submit, result);
+    form.appendChild(fieldset);
+
+    function showError(message, focusEl) {
+      error.textContent = message;
+      if (focusEl) {
+        focusEl.setAttribute("aria-invalid", "true");
+        focusEl.focus();
+      }
+    }
+    function clearError() {
+      error.textContent = "";
+      [name, age, rep].forEach((el) => el.removeAttribute("aria-invalid"));
+    }
+
+    form.addEventListener("submit", async (ev) => {
+      ev.preventDefault();
+      clearError();
+
+      // Validate in the order the fields appear, so focus moves to the
+      // first thing that actually needs fixing.
+      if (!name.value.trim()) return showError("Please enter the athlete's name.", name);
+      if (!age.value)         return showError("Please choose an age group.", age);
+      if (!rep.value.trim())  return showError("Please enter who the athlete is representing.", rep);
+
+      submit.disabled = true;
+      try {
+        const entry = await apiAddEntry(event.id, name.value.trim(), age.value, rep.value.trim());
+        console.log("[shotput] entry added:", entry);
+        result.textContent =
+          entry.athleteName + " entered as " + ageGroupLabel(entry.ageGroup) +
+          ", representing " + entry.representing + ".";
+        name.value = "";
+        age.value = "";
+        rep.value = "";
+        await render();
+      } catch (err) {
+        console.error("[shotput] entry failed:", err);
+        showError(err.message, name);
+      } finally {
+        submit.disabled = false;
+      }
+    });
+
+    return form;
+  }
+
+  /* ---------- Entry list, grouped by age group ---------- */
+
+  async function loadEntries(event, wrap) {
+    let entries = [];
+    try {
+      entries = await apiGetEntries(event.id);
+    } catch (err) {
+      wrap.innerHTML = "";
+      const p = document.createElement("p");
+      p.className = "error-text";
+      p.textContent = err.message;
+      wrap.appendChild(p);
+      return;
+    }
+
+    wrap.innerHTML = "";
+
+    if (entries.length === 0) {
+      const p = document.createElement("p");
+      p.className = "hint";
+      p.textContent = "No entries yet.";
+      wrap.appendChild(p);
+      return;
+    }
+
+    const heading = document.createElement("h4");
+    heading.className = "entries-heading";
+    heading.textContent = "Entries (" + entries.length + ")";
+    wrap.appendChild(heading);
+
+    // One table per age group, so a coach can read off each grade at a glance.
+    AGE_GROUPS.forEach((group) => {
+      const inGroup = entries.filter((e) => e.ageGroup === group.value);
+      if (inGroup.length === 0) return;
+
+      const groupHeading = document.createElement("h5");
+      groupHeading.className = "age-group-heading";
+      groupHeading.textContent = group.label + " (" + inGroup.length + ")";
+
+      const table = document.createElement("table");
+      table.className = "entries-table";
+
+      const caption = document.createElement("caption");
+      caption.className = "visually-hidden";
+      caption.textContent = group.label + " entries for " + event.name;
+      table.appendChild(caption);
+
+      const thead = document.createElement("thead");
+      const headRow = document.createElement("tr");
+      const cols = ["Athlete", "Representing"];
+      if (isAdmin) cols.push("Remove");
+      cols.forEach((c) => {
+        const th = document.createElement("th");
+        th.scope = "col";
+        if (c === "Remove") {
+          const hidden = document.createElement("span");
+          hidden.className = "visually-hidden";
+          hidden.textContent = "Remove entry";
+          th.appendChild(hidden);
+        } else {
+          th.textContent = c;
+        }
+        headRow.appendChild(th);
+      });
+      thead.appendChild(headRow);
+      table.appendChild(thead);
+
+      const tbody = document.createElement("tbody");
+      inGroup.forEach((entry) => {
+        const tr = document.createElement("tr");
+
+        const nameCell = document.createElement("td");
+        nameCell.textContent = entry.athleteName;
+
+        const repCell = document.createElement("td");
+        repCell.textContent = entry.representing;
+
+        tr.append(nameCell, repCell);
+
+        if (isAdmin) {
+          const actionCell = document.createElement("td");
+          const remove = document.createElement("button");
+          remove.type = "button";
+          remove.className = "btn btn-secondary btn-small";
+          remove.textContent = "Remove";
+          remove.setAttribute("aria-label", "Remove " + entry.athleteName + " from " + event.name);
+          remove.addEventListener("click", async () => {
+            if (!window.confirm("Remove " + entry.athleteName + " from " + event.name + "?")) return;
+            remove.disabled = true;
+            try {
+              await apiDeleteEntry(entry.id);
+              await render();
+            } catch (err) {
+              window.alert(err.message);
+              remove.disabled = false;
+            }
+          });
+          actionCell.appendChild(remove);
+          tr.appendChild(actionCell);
+        }
+
+        tbody.appendChild(tr);
+      });
+      table.appendChild(tbody);
+
+      wrap.append(groupHeading, table);
+    });
+  }
+
+  /* ---------- Create event (admin) ---------- */
+
+  if (createForm) {
+    createForm.addEventListener("submit", async (ev) => {
+      ev.preventDefault();
+      nameError.textContent = "";
+      nameInput.removeAttribute("aria-invalid");
+
+      const name = nameInput.value.trim();
+      if (!name) {
+        nameError.textContent = "Please enter a name for the event.";
+        nameInput.setAttribute("aria-invalid", "true");
+        nameInput.focus();
+        return;
+      }
+
+      try {
+        const created = await apiCreateEvent(name, dateInput.value);
+        console.log("[shotput] event created:", created);
+        createStatus.textContent = 'Event created: "' + created.name + '" — entries are open.';
+        createStatus.classList.add("is-recorded");
+        nameInput.value = "";
+        dateInput.value = "";
+        await render();
+      } catch (err) {
+        console.error("[shotput] could not create event:", err);
+        nameError.textContent = err.message;
+        nameInput.setAttribute("aria-invalid", "true");
+      }
+    });
+  }
+
+  /* ---------- Render everything ---------- */
+
+  async function render() {
+    let events = [];
+    try {
+      events = await apiGetEvents();
+    } catch (err) {
+      console.error("[shotput] could not load events:", err);
+      showFatalErrorBanner("Could not load events: " + err.message);
+      return;
+    }
+
+    list.innerHTML = "";
+    if (events.length === 0) {
+      if (emptyEl) emptyEl.hidden = false;
+      console.log("[shotput] no events yet");
+      return;
+    }
+    if (emptyEl) emptyEl.hidden = true;
+
+    events.forEach((event) => list.appendChild(buildEventCard(event)));
+    console.log("[shotput] rendered", events.length, "event(s)");
+  }
+
+  // Find out whether this user is an admin BEFORE the first render, so
+  // admin controls appear on the very first paint rather than popping in.
+  apiGetMe()
+    .then((me) => {
+      isAdmin = me.role === "admin";
+      if (isAdmin && createCard) createCard.hidden = false;
+      return render();
+    })
+    .catch((err) => {
+      console.warn("[shotput] could not confirm role, rendering read-only:", err.message);
+      return render();
+    });
+}
+
 /* ---------- Start everything ---------- */
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -689,6 +1281,7 @@ document.addEventListener("DOMContentLoaded", () => {
     renderUserBadge();
     initFieldView();
     initResultsView();
+    initEventsView();
     console.log("[shotput] init complete");
   } catch (err) {
     console.error("[shotput] init failed:", err);

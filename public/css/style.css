@@ -669,3 +669,121 @@ tr.is-best td { font-weight: 700; }
    toggled with it, and a stray display rule silently breaking that would look
    exactly like "the leaderboard doesn't work". */
 [hidden] { display: none !important; }
+/* =========================================================
+   EVENTS
+   ========================================================= */
+
+.events-list { display: grid; gap: 1.5rem; }
+
+.event-card { border-top-color: var(--color-clay, #c1541c); }
+
+.event-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.25rem;
+}
+.event-head h3 { margin: 0; font-size: 1.35rem; }
+
+/* Status is a WORD as well as a colour, so it still reads correctly
+   for anyone who can't distinguish the two shades. */
+.event-status {
+  display: inline-block;
+  padding: 0.2rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  border: 2px solid;
+}
+.event-status.is-open   { background: #eaf4ec; color: #1b5e2a; border-color: #1b5e2a; }
+.event-status.is-closed { background: #f2efe4; color: #5b4a2a; border-color: #8a6a2f; }
+
+.event-meta {
+  margin: 0 0 1rem;
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  color: var(--color-ink-soft);
+}
+
+.event-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-bottom: 1.25rem;
+}
+
+/* ---------- Entry form ---------- */
+
+.entry-fieldset {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius, 12px);
+  padding: 1.25rem;
+  margin: 0 0 1.25rem;
+}
+.entry-fieldset legend {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-turf-dark);
+  padding: 0 0.5rem;
+}
+.label-optional { font-weight: 400; color: var(--color-ink-soft); }
+
+.entry-form select {
+  width: 100%;
+  font-family: var(--font-body);
+  font-size: 1.1rem;
+  padding: 0.75rem 0.9rem;
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius, 12px);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  min-height: 48px;
+}
+.entry-form select:hover { border-color: var(--color-turf); }
+.entry-form select[aria-invalid="true"],
+.entry-form input[aria-invalid="true"] {
+  border-color: var(--color-error);
+  background: var(--color-error-bg);
+}
+
+.entry-result {
+  margin: 0.75rem 0 0;
+  font-weight: 700;
+  color: var(--color-turf-dark);
+}
+.entry-result:empty { display: none; }
+
+/* ---------- Entry lists ---------- */
+
+.entries-heading {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  margin: 0 0 0.75rem;
+  color: var(--color-turf-dark);
+}
+.age-group-heading {
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-ink-soft);
+  margin: 1rem 0 0.35rem;
+}
+.entries-table { width: 100%; border-collapse: collapse; margin-bottom: 0.5rem; }
+.entries-table th,
+.entries-table td {
+  text-align: left;
+  padding: 0.6rem 0.5rem;
+  border-bottom: 1px solid var(--color-border);
+}
+.entries-table th { font-family: var(--font-body); font-size: 0.9rem; color: var(--color-ink-soft); }
+.entries-table td { font-family: var(--font-mono); }
+
+.btn-small { padding: 0.45rem 0.9rem; font-size: 0.9rem; min-height: 40px; }
+
+@media (max-width: 520px) {
+  .event-controls .btn { flex: 1 1 100%; }
+}

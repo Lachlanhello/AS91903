@@ -21,6 +21,10 @@
     {
       "id": 7,
       "name": "Arth patel"
+    },
+    {
+      "id": 8,
+      "name": "Lachlan"
     }
   ],
   "throws": [
@@ -44,11 +48,58 @@
       "distance": 5.06,
       "recordedAt": "2026-09-17T00:00:40.047Z",
       "recordedBy": "admin"
+    },
+    {
+      "id": 15,
+      "athleteId": 8,
+      "eventId": 1,
+      "distance": 14.95,
+      "recordedAt": "2026-09-17T22:27:36.059Z",
+      "recordedBy": "admin"
+    },
+    {
+      "id": 16,
+      "athleteId": 8,
+      "eventId": 1,
+      "distance": 14.51,
+      "recordedAt": "2026-09-17T22:27:54.716Z",
+      "recordedBy": "admin"
+    },
+    {
+      "id": 17,
+      "athleteId": 7,
+      "eventId": 1,
+      "distance": 5.01,
+      "recordedAt": "2026-09-17T22:28:14.545Z",
+      "recordedBy": "admin"
     }
   ],
   "nextId": {
     "users": 3,
-    "athletes": 8,
-    "throws": 15
-  }
+    "athletes": 9,
+    "throws": 18,
+    "events": 2,
+    "entries": 2
+  },
+  "events": [
+    {
+      "id": 1,
+      "name": "Nationals secondary schools shotput",
+      "eventDate": "2026-09-19",
+      "status": "open",
+      "createdBy": "admin",
+      "createdAt": "2026-09-17T22:15:34.874Z"
+    }
+  ],
+  "entries": [
+    {
+      "id": 1,
+      "eventId": 1,
+      "athleteName": "Lachlan McCurdy",
+      "ageGroup": "senior",
+      "representing": "Rathkeale",
+      "enteredBy": "visitor",
+      "enteredAt": "2026-09-17T22:16:37.577Z"
+    }
+  ]
 }

@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Events — Shot Put Field Tool</title>
+  <meta name="description" content="Shot put events: admins set up events, athletes enter with their name, age group and who they represent.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Barlow+Condensed:wght@600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css?v=9">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to main content</a>
+
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="/">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2.5" fill="currentColor" stroke="none"/></svg>
+        </span>
+        Shot Put Field Tool
+      </a>
+      <nav aria-label="Main navigation">
+        <ul class="nav-list">
+          <li><a href="/">Home</a></li>
+          <li><a href="/field">Field View</a></li>
+          <li><a href="/events" aria-current="page">Events</a></li>
+          <li><a href="/results">Results</a></li>
+          <li><a href="/guide">Guide</a></li>
+        </ul>
+      </nav>
+      <div class="user-badge" id="user-badge" hidden>
+        <span id="user-badge-text"></span>
+        <form method="POST" action="/logout" class="logout-form">
+          <button type="submit" class="btn btn-secondary logout-btn">Log out</button>
+        </form>
+      </div>
+    </div>
+  </header>
+
+  <main id="main">
+    <h1>Events</h1>
+    <div class="ruler-rule" aria-hidden="true"></div>
+
+    <p id="events-intro">
+      Choose an event below and enter an athlete with their name, age group
+      and who they are representing.
+    </p>
+
+    <!-- Admins only: set up a new event -->
+    <section class="card admin-only" id="create-event-card" aria-labelledby="create-event-heading" hidden>
+      <h2 id="create-event-heading">Set up a new event</h2>
+
+      <form id="create-event-form" novalidate>
+        <div class="field-group">
+          <label for="event-name">Event name</label>
+          <input type="text" id="event-name" name="event-name" maxlength="80"
+                 placeholder="e.g. Senior Boys Shot Put" aria-describedby="event-name-hint event-name-error">
+          <p id="event-name-hint" class="hint">A short, clear name athletes will recognise.</p>
+          <p id="event-name-error" class="error-text" role="alert"></p>
+        </div>
+
+        <div class="field-group">
+          <label for="event-date">Date <span class="label-optional">(optional)</span></label>
+          <input type="date" id="event-date" name="event-date">
+        </div>
+
+        <button type="submit" class="btn btn-primary">Create event</button>
+      </form>
+
+      <p id="create-event-status" class="throw-result scoreboard" aria-live="polite">No event created yet.</p>
+    </section>
+
+    <!-- The event list; each event gets its own card, built by app.js -->
+    <section aria-labelledby="event-list-heading">
+      <h2 id="event-list-heading">All events</h2>
+      <p id="events-empty" class="hint" hidden>
+        No events have been set up yet.
+      </p>
+      <div id="events-list" class="events-list"></div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>Shot Put Field Tool — built for athletes, coaches, teachers and spectators.</p>
+  </footer>
+
+  <script src="/js/app.js?v=9"></script>
+</body>
+</html>s

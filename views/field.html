@@ -8,11 +8,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Barlow+Condensed:wght@600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=8">
+  <link rel="stylesheet" href="/css/style.css?v=9">
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to main content</a>
-
   <header class="site-header">
     <div class="header-inner">
       <a class="brand" href="/">
@@ -24,7 +23,8 @@
       <nav aria-label="Main navigation">
         <ul class="nav-list">
           <li><a href="/">Home</a></li>
-          <li class="admin-only" hidden><a href="/field" aria-current="page">Field View</a></li>
+          <li><a href="/field" aria-current="page">Field View</a></li>
+          <li><a href="/events">Events</a></li>
           <li><a href="/results">Results</a></li>
           <li><a href="/guide">Guide</a></li>
         </ul>
@@ -41,34 +41,20 @@
   <main id="main">
     <h1>Field View</h1>
     <div class="ruler-rule" aria-hidden="true"></div>
-
     <div class="view-toggle" role="group" aria-label="Switch view">
       <a href="/field" class="toggle-btn is-active" aria-current="page">Field View</a>
       <a href="/results" class="toggle-btn">Results View</a>
     </div>
-
-    <p id="motion-note" class="hint" hidden>
-      Your device is set to reduce motion, so the shot appears directly at
-      its landing spot instead of animating across the field.
-    </p>
+    <p id="motion-note" class="hint" hidden>Your device is set to reduce motion, so the shot appears directly at its landing spot instead of animating across the field.</p>
 
     <div class="field-layout">
       <section class="field-panel card" aria-labelledby="field-heading">
         <h2 id="field-heading" class="visually-hidden">Shot put field diagram</h2>
-
         <div class="field-container">
           <div class="field-overlay">
-            <svg id="fieldSvg" viewBox="0 0 900 420" preserveAspectRatio="xMidYMid meet"
-                 role="img" aria-labelledby="svg-title svg-desc">
+            <svg id="fieldSvg" viewBox="0 0 900 420" preserveAspectRatio="xMidYMid meet" role="img" aria-labelledby="svg-title svg-desc">
               <title id="svg-title">Shot put field diagram</title>
-              <desc id="svg-desc">
-                A green shot put field seen from above the throwing circle, with
-                distance rings at 5, 10, 15, 20 and 25 metres. Each recorded throw
-                leaves a permanent dot where it landed and the furthest throw is
-                marked with a star. Every distance is also listed as text in the
-                leaderboard beside this diagram.
-              </desc>
-
+              <desc id="svg-desc">A green shot put field seen from above the throwing circle, with distance rings at 5, 10, 15, 20 and 25 metres. Each recorded throw leaves a permanent dot where it landed.</desc>
               <defs>
                 <radialGradient id="ballGradient" cx="35%" cy="30%" r="70%">
                   <stop offset="0%" stop-color="#ffefc2" />
@@ -80,15 +66,8 @@
                   <circle cx="9" cy="9" r="1" fill="rgba(255,255,255,0.05)" />
                 </pattern>
               </defs>
-
-              <!-- Built at runtime by buildField() in app.js, so the field graphic
-                   and the throw maths always agree on exactly where each distance sits. -->
               <g id="fieldGraphic"></g>
-
-              <!-- A permanent marker for every throw -->
               <g id="markersLayer"></g>
-
-              <!-- The flying shot: trail, shadow, and ball -->
               <g id="flightLayer">
                 <line id="trailLine" />
                 <ellipse id="shotShadow" rx="7" ry="3.5" />
@@ -102,28 +81,31 @@
       <div class="field-sidebar">
         <section class="throw-panel card" aria-labelledby="throw-heading">
           <h2 id="throw-heading">Record a throw</h2>
-
+          <div class="field-group">
+            <label for="throw-event-select">Event</label>
+            <select id="throw-event-select" aria-describedby="throw-event-status">
+              <option value="">Loading events...</option>
+            </select>
+            <p id="throw-event-status" class="hint" aria-live="polite"></p>
+          </div>
           <form id="throw-form" novalidate>
             <div class="field-group">
               <label for="athlete-name">Athlete name</label>
               <input type="text" id="athlete-name" name="athlete-name" autocomplete="name" placeholder="e.g. Jordan Smith">
             </div>
-
             <div class="field-group">
               <label for="distance-input">Throw distance (metres)</label>
               <div class="distance-stepper">
                 <button type="button" id="distance-step-down" class="stepper-btn" aria-label="Decrease distance by 0.1 metres">−</button>
-                <input type="number" id="distance-input" name="distance" step="0.01" min="0"
-                       inputmode="decimal" aria-describedby="distance-hint distance-error">
+                <input type="number" id="distance-input" name="distance" step="0.01" min="0" inputmode="decimal" aria-describedby="distance-hint distance-error">
                 <button type="button" id="distance-step-up" class="stepper-btn" aria-label="Increase distance by 0.1 metres">+</button>
               </div>
               <p id="distance-hint" class="hint">Enter a distance between 0.01 and 30 metres, or use the − / + buttons to adjust by 0.1 m.</p>
               <p id="distance-error" class="error-text" role="alert"></p>
             </div>
-
             <button type="submit" class="btn btn-primary">Record Throw</button>
           </form>
-
+          <p id="field-readonly-note" class="hint" hidden>Visitors can view throws here, but only an admin can record them.</p>
           <p id="throw-result" class="throw-result scoreboard" aria-live="polite">No throw recorded yet.</p>
         </section>
 
@@ -131,15 +113,7 @@
           <h2 id="mini-leaderboard-heading">Leaderboard</h2>
           <table id="leaderboard-table" hidden>
             <caption class="visually-hidden">Athletes ranked by their best throw distance</caption>
-            <thead>
-              <tr>
-                <th scope="col">Rank</th>
-                <th scope="col">Athlete</th>
-                <th scope="col">Best</th>
-                <th scope="col">Tries</th>
-                <th scope="col"><span class="visually-hidden">Status</span></th>
-              </tr>
-            </thead>
+            <thead><tr><th scope="col">Rank</th><th scope="col">Athlete</th><th scope="col">Best</th><th scope="col">Tries</th><th scope="col"><span class="visually-hidden">Status</span></th></tr></thead>
             <tbody id="leaderboard-tbody"></tbody>
           </table>
           <p id="leaderboard-empty" class="hint">No throws recorded yet.</p>
@@ -152,7 +126,6 @@
   <footer class="site-footer">
     <p>Shot Put Field Tool — built for athletes, coaches, teachers and spectators.</p>
   </footer>
-
-  <script src="/js/app.js?v=8"></script>
+  <script src="/js/app.js?v=9"></script>
 </body>
 </html>

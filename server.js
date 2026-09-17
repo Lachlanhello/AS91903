@@ -84,6 +84,7 @@ function startupCheck() {
     ["views/index.html",     "Home page"],
     ["views/guide.html",     "Guide page"],
     ["views/login.html",     "Login page"],
+    ["views/events.html",    "Events page"],
   ];
   const missing = checks.filter(([rel]) => !fs.existsSync(path.join(__dirname, rel)));
   if (missing.length === 0) {
@@ -139,6 +140,11 @@ function requireAdminApi(req, res, next) {
   return res.status(403).json({ error: "Only an admin account can record throws." });
 }
 
+function requireVisitorApi(req, res, next) {
+  if (req.session && req.session.user && req.session.user.role === "visitor") return next();
+  return res.status(403).json({ error: "Only a visitor account can enter athletes." });
+}
+
 // Small helper so the page routes below read cleanly.
 function sendView(filename) {
   return (req, res) => res.sendFile(path.join(VIEWS_DIR, filename));
@@ -177,9 +183,10 @@ app.post("/logout", (req, res) => {
 /* ---------- Pages ---------- */
 
 app.get("/", requireAuth, sendView("index.html"));
-app.get("/field", requireAdmin, sendView("field.html"));
+app.get("/field", requireAuth, sendView("field.html"));
 app.get("/results", requireAuth, sendView("results.html"));
 app.get("/guide", requireAuth, sendView("guide.html"));
+app.get("/events", requireAuth, sendView("events.html"));
 
 /* ---------- JSON API used by public/js/app.js ---------- */
 
@@ -194,6 +201,11 @@ app.get("/api/throws", requireAuthApi, (req, res) => {
 app.post("/api/throws", requireAdminApi, (req, res) => {
   const name = (req.body.athleteName || "").trim();
   const distance = Number(req.body.distance);
+  const eventId = Number(req.body.eventId);
+
+  if (!Number.isInteger(eventId) || eventId <= 0 || !db.getEventById(eventId)) {
+    return res.status(400).json({ error: "Choose an event before recording a throw." });
+  }
 
   if (!name) {
     return res.status(400).json({ error: "Athlete name is required." });
@@ -205,12 +217,113 @@ app.post("/api/throws", requireAdminApi, (req, res) => {
     return res.status(400).json({ error: "Enter a realistic distance of 30 metres or less." });
   }
 
-  const record = db.addThrow(name, distance, req.session.user.username);
+  const record = db.addThrow(name, distance, eventId, req.session.user.username);
   res.status(201).json(record);
 });
 
 app.post("/api/throws/clear", requireAdminApi, (req, res) => {
   db.clearAllThrows();
+  res.status(204).end();
+});
+
+
+/* =========================================================
+   Events API
+   Creating / opening / closing / deleting an event is admin
+   only. ENTERING an event is open to any logged-in user,
+   including visitors - that is the whole point of the guest
+   entry system.
+   ========================================================= */
+
+app.get("/api/events", requireAuthApi, (req, res) => {
+  res.json(db.getAllEvents());
+});
+
+app.post("/api/events", requireAdminApi, (req, res) => {
+  const name = (req.body.name || "").trim();
+  const eventDate = (req.body.eventDate || "").trim();
+
+  if (!name) {
+    return res.status(400).json({ error: "Event name is required." });
+  }
+  if (name.length > 80) {
+    return res.status(400).json({ error: "Event name must be 80 characters or fewer." });
+  }
+  res.status(201).json(db.createEvent(name, eventDate, req.session.user.username));
+});
+
+app.post("/api/events/:id/status", requireAdminApi, (req, res) => {
+  const status = req.body.status;
+  if (status !== "open" && status !== "closed") {
+    return res.status(400).json({ error: "Status must be either open or closed." });
+  }
+  const updated = db.setEventStatus(req.params.id, status);
+  if (!updated) return res.status(404).json({ error: "That event no longer exists." });
+  res.json(updated);
+});
+
+app.delete("/api/events/:id", requireAdminApi, (req, res) => {
+  const ok = db.deleteEvent(req.params.id);
+  if (!ok) return res.status(404).json({ error: "That event no longer exists." });
+  res.status(204).end();
+});
+
+/* ---------- Entries ---------- */
+
+app.get("/api/events/:id/entries", requireAuthApi, (req, res) => {
+  const event = db.getEventById(req.params.id);
+  if (!event) return res.status(404).json({ error: "That event no longer exists." });
+  res.json(db.getEntriesForEvent(req.params.id));
+});
+
+app.get("/api/entries", requireAuthApi, (req, res) => {
+  res.json(db.getAllEntries());
+});
+
+// Visitors enter athletes; admins manage events and record throws instead.
+app.post("/api/events/:id/entries", requireVisitorApi, (req, res) => {
+  const event = db.getEventById(req.params.id);
+  if (!event) {
+    return res.status(404).json({ error: "That event no longer exists." });
+  }
+  if (event.status !== "open") {
+    return res.status(409).json({ error: "Entries for this event are closed." });
+  }
+
+  const athleteName = (req.body.athleteName || "").trim();
+  const ageGroup = (req.body.ageGroup || "").trim().toLowerCase();
+  const representing = (req.body.representing || "").trim();
+
+  if (!athleteName) {
+    return res.status(400).json({ error: "Please enter the athlete's name." });
+  }
+  if (athleteName.length > 60) {
+    return res.status(400).json({ error: "Athlete name must be 60 characters or fewer." });
+  }
+  if (!db.AGE_GROUPS.includes(ageGroup)) {
+    return res.status(400).json({
+      error: "Please choose an age group: junior, intermediate or senior.",
+    });
+  }
+  if (!representing) {
+    return res.status(400).json({ error: "Please enter who the athlete is representing." });
+  }
+  if (representing.length > 60) {
+    return res.status(400).json({ error: "Representing must be 60 characters or fewer." });
+  }
+  if (db.findDuplicateEntry(event.id, athleteName)) {
+    return res.status(409).json({
+      error: athleteName + " is already entered in this event.",
+    });
+  }
+
+  const entry = db.addEntry(event.id, athleteName, ageGroup, representing, req.session.user.username);
+  res.status(201).json(entry);
+});
+
+app.delete("/api/entries/:id", requireAdminApi, (req, res) => {
+  const ok = db.deleteEntry(req.params.id);
+  if (!ok) return res.status(404).json({ error: "That entry no longer exists." });
   res.status(204).end();
 });
 
