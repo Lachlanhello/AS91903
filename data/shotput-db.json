@@ -72,12 +72,20 @@
       "distance": 5.01,
       "recordedAt": "2026-09-17T22:28:14.545Z",
       "recordedBy": "admin"
+    },
+    {
+      "id": 18,
+      "athleteId": 6,
+      "eventId": 1,
+      "distance": 14.96,
+      "recordedAt": "2026-09-17T22:36:13.865Z",
+      "recordedBy": "admin"
     }
   ],
   "nextId": {
     "users": 3,
     "athletes": 9,
-    "throws": 18,
+    "throws": 19,
     "events": 2,
     "entries": 2
   },

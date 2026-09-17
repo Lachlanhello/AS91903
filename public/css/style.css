@@ -115,6 +115,7 @@ code {
 a:focus-visible,x
 button:focus-visible,
 input:focus-visible,
+select:focus-visible,
 .toggle-btn:focus-visible {
   outline: 3px solid var(--color-focus);
   outline-offset: 3px;
@@ -345,7 +346,8 @@ label { display: block; font-weight: 700; margin-bottom: 0.35rem; }
 
 input[type="text"],
 input[type="password"],
-input[type="number"] {
+input[type="number"],
+select {
   width: 100%;
   font-family: var(--font-body);
   font-size: 1.1rem;
@@ -358,7 +360,8 @@ input[type="number"] {
 }
 input[type="text"]:hover,
 input[type="password"]:hover,
-input[type="number"]:hover { border-color: var(--color-turf); }
+input[type="number"]:hover,
+select:hover { border-color: var(--color-turf); }
 
 input[aria-invalid="true"] { border-color: var(--color-error); background: var(--color-error-bg); }
 
@@ -386,7 +389,19 @@ input[aria-invalid="true"] { border-color: var(--color-error); background: var(-
 .error-text:empty { display: none; }
 
 /* ---------- Field View layout ---------- */
-.field-layout { display: grid; grid-template-columns: 1.6fr 1fr; gap: 1.5rem; align-items: start; }
+.field-layout {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  grid-template-areas:
+    "field controls"
+    "leaderboard controls";
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.field-panel { grid-area: field; }
+.field-leaderboard { grid-area: leaderboard; }
+.field-sidebar { grid-area: controls; }
 
 .field-sidebar { display: grid; gap: 1.5rem; }
 
@@ -403,7 +418,13 @@ input[aria-invalid="true"] { border-color: var(--color-error); background: var(-
    only, making the animation look tiny or "broken". 460/760 = 60.5%. */
 
 @media (max-width: 900px) {
-  .field-layout { grid-template-columns: 1fr; }
+  .field-layout {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "field"
+      "leaderboard"
+      "controls";
+  }
 }
 
 /* Field graphic (built by buildField() in app.js) */
@@ -636,6 +657,37 @@ tr.is-best td { font-weight: 700; }
   text-anchor: middle;
 }
 .throw-marker.is-newest .marker-dot { animation: markerPop 0.45s ease-out; }
+.throw-marker { cursor: help; outline: none; }
+.marker-tooltip {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.16s ease;
+}
+.throw-marker:hover .marker-tooltip,
+.throw-marker:focus .marker-tooltip,
+.throw-marker:focus-visible .marker-tooltip {
+  opacity: 1;
+}
+.marker-tooltip-panel {
+  fill: var(--color-scoreboard);
+  stroke: var(--color-led);
+  stroke-width: 1.5;
+  filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.28));
+}
+.marker-tooltip-name,
+.marker-tooltip-line {
+  fill: #fff;
+  font-family: var(--font-body);
+  pointer-events: none;
+}
+.marker-tooltip-name {
+  font-size: 15px;
+  font-weight: 700;
+}
+.marker-tooltip-line {
+  fill: #f5d47b;
+  font-size: 13px;
+}
 @keyframes markerPop {
   from { transform: scale(0.2); opacity: 0.4; }
   to   { transform: scale(1);   opacity: 1; }
@@ -662,6 +714,7 @@ tr.is-best td { font-weight: 700; }
   .throw-marker.is-newest .marker-dot { animation: none; }
   .landing-pulse { animation: none; opacity: 0; }
   #flightLayer { transition: none; }
+  .marker-tooltip { transition: none; }
 }
 
 

@@ -210,6 +210,9 @@ app.post("/api/throws", requireAdminApi, (req, res) => {
   if (!name) {
     return res.status(400).json({ error: "Athlete name is required." });
   }
+  if (!db.findEntryForAthlete(eventId, name)) {
+    return res.status(400).json({ error: "Choose an athlete entered in the selected event." });
+  }
   if (!Number.isFinite(distance) || distance <= 0) {
     return res.status(400).json({ error: "Enter a distance greater than 0 metres." });
   }

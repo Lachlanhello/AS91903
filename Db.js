@@ -109,6 +109,11 @@ function getOrCreateAthleteId(data, name) {
 function addThrow(athleteName, distance, eventId, recordedBy) {
   const data = load();
   const athleteId = getOrCreateAthleteId(data, athleteName);
+  const event = data.events.find((e) => e.id === Number(eventId));
+  const matchingEntry = data.entries.find((entry) =>
+    entry.eventId === Number(eventId) &&
+    entry.athleteName.trim().toLowerCase() === athleteName.trim().toLowerCase()
+  );
   const record = {
     id: data.nextId.throws++,
     athleteId,
@@ -119,7 +124,12 @@ function addThrow(athleteName, distance, eventId, recordedBy) {
   };
   data.throws.push(record);
   save(data);
-  return { ...record, athleteName };
+  return {
+    ...record,
+    athleteName,
+    eventName: event ? event.name : "Unassigned",
+    ageGroup: matchingEntry ? matchingEntry.ageGroup : null,
+  };
 }
 
 function getAllThrows() {
@@ -127,14 +137,22 @@ function getAllThrows() {
   const athleteNameById = Object.fromEntries(data.athletes.map((a) => [a.id, a.name]));
   const eventNameById = Object.fromEntries(data.events.map((e) => [e.id, e.name]));
   return data.throws
-    .map((t) => ({
-      id: t.id,
-      athleteName: athleteNameById[t.athleteId] || "Unknown athlete",
-      eventId: t.eventId || null,
-      eventName: eventNameById[t.eventId] || "Unassigned",
-      distance: t.distance,
-      recordedAt: t.recordedAt,
-    }))
+    .map((t) => {
+      const athleteName = athleteNameById[t.athleteId] || "Unknown athlete";
+      const matchingEntry = data.entries.find((entry) =>
+        entry.eventId === Number(t.eventId) &&
+        entry.athleteName.trim().toLowerCase() === athleteName.trim().toLowerCase()
+      );
+      return {
+        id: t.id,
+        athleteName,
+        ageGroup: matchingEntry ? matchingEntry.ageGroup : null,
+        eventId: t.eventId || null,
+        eventName: eventNameById[t.eventId] || "Unassigned",
+        distance: t.distance,
+        recordedAt: t.recordedAt,
+      };
+    })
     .sort((a, b) => a.id - b.id);
 }
 
@@ -235,6 +253,14 @@ function findDuplicateEntry(eventId, athleteName) {
   ) || null;
 }
 
+function findEntryForAthlete(eventId, athleteName) {
+  const data = load();
+  return data.entries.find((x) =>
+    x.eventId === Number(eventId) &&
+    x.athleteName.trim().toLowerCase() === athleteName.trim().toLowerCase()
+  ) || null;
+}
+
 function addEntry(eventId, athleteName, ageGroup, representing, enteredBy) {
   const data = load();
   const record = {
@@ -274,6 +300,7 @@ module.exports = {
   getEntriesForEvent,
   getAllEntries,
   findDuplicateEntry,
+  findEntryForAthlete,
   addEntry,
   deleteEntry,
 };

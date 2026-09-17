@@ -441,7 +441,7 @@ function initFieldView() {
       const me = await apiGetMe();
       isAdmin = me.role === "admin";
       if (readOnlyNote) readOnlyNote.hidden = isAdmin;
-      setThrowControlsDisabled(!isAdmin);
+      setThrowControlsDisabled(!isAdmin || !selectedEventId);
 
       const events = await apiGetEvents();
       eventSelect.innerHTML = "";
@@ -473,6 +473,43 @@ function initFieldView() {
     }
   }
 
+  async function loadEventAthletes() {
+    nameInput.innerHTML = "";
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = selectedEventId ? "Loading athletes..." : "Select an event first...";
+    nameInput.appendChild(placeholder);
+
+    if (!selectedEventId) return;
+
+    try {
+      const entries = await apiGetEntries(selectedEventId);
+      nameInput.innerHTML = "";
+      const choose = document.createElement("option");
+      choose.value = "";
+      choose.textContent = entries.length ? "Select an athlete..." : "No athletes entered";
+      nameInput.appendChild(choose);
+
+      entries.forEach((entry) => {
+        const option = document.createElement("option");
+        option.value = entry.athleteName;
+        option.textContent = entry.athleteName + " — " + ageGroupLabel(entry.ageGroup);
+        nameInput.appendChild(option);
+      });
+
+      if (isAdmin && entries.length === 0) {
+        setEventStatus("No athletes are entered in this event yet. Visitors can add them on the Events page.");
+      }
+    } catch (err) {
+      nameInput.innerHTML = "";
+      const failed = document.createElement("option");
+      failed.value = "";
+      failed.textContent = "Could not load athletes";
+      nameInput.appendChild(failed);
+      console.error("[shotput] could not load event athletes:", err);
+    }
+  }
+
   /* ---------- Landing markers: one dot per throw, kept permanently ---------- */
 
   function renderMarkers(newestId) {
@@ -488,11 +525,19 @@ function initFieldView() {
 
       const g = svgEl("g", {
         class: "throw-marker" + (isBest ? " is-best" : "") + (isNewest ? " is-newest" : ""),
+        tabindex: "0",
+        role: "img",
+        "aria-label": record.athleteName + ", " +
+          (record.ageGroup ? ageGroupLabel(record.ageGroup) : "age group not set") +
+          ", " + formatDistance(record.distance),
       });
 
-      // Native SVG tooltip - hovering a dot says who threw it.
+      // Keep a native tooltip for assistive technology and add a richer
+      // visible card for pointer hover and keyboard focus.
       const title = svgEl("title", {});
-      title.textContent = record.athleteName + " — " + formatDistance(record.distance);
+      title.textContent = record.athleteName + " — " +
+        (record.ageGroup ? ageGroupLabel(record.ageGroup) : "Age group not set") +
+        " — " + formatDistance(record.distance);
       g.appendChild(title);
 
       g.appendChild(svgEl("circle", {
@@ -500,6 +545,31 @@ function initFieldView() {
         cx: point.x.toFixed(1), cy: point.y.toFixed(1),
         r: isBest ? 8 : 6,
       }));
+
+      const tooltipWidth = 218;
+      const tooltipHeight = 76;
+      const tooltipX = Math.min(Math.max(point.x + 14, 8), VIEW_W - tooltipWidth - 8);
+      const tooltipY = Math.min(Math.max(point.y - tooltipHeight - 12, 8), VIEW_H - tooltipHeight - 8);
+      const tooltip = svgEl("g", {
+        class: "marker-tooltip",
+        "aria-hidden": "true",
+        transform: "translate(" + tooltipX.toFixed(1) + " " + tooltipY.toFixed(1) + ")",
+      });
+      tooltip.appendChild(svgEl("rect", {
+        class: "marker-tooltip-panel",
+        width: tooltipWidth,
+        height: tooltipHeight,
+        rx: 6,
+      }));
+
+      const tooltipName = svgEl("text", { class: "marker-tooltip-name", x: 12, y: 21 });
+      tooltipName.textContent = record.athleteName;
+      const tooltipAge = svgEl("text", { class: "marker-tooltip-line", x: 12, y: 42 });
+      tooltipAge.textContent = "Age group: " + (record.ageGroup ? ageGroupLabel(record.ageGroup) : "Not set");
+      const tooltipDistance = svgEl("text", { class: "marker-tooltip-line", x: 12, y: 62 });
+      tooltipDistance.textContent = "Distance: " + formatDistance(record.distance);
+      tooltip.append(tooltipName, tooltipAge, tooltipDistance);
+      g.appendChild(tooltip);
 
       if (isBest) {
         const star = svgEl("text", {
@@ -663,6 +733,7 @@ function initFieldView() {
     } else {
       setEventStatus(isAdmin ? "Choose an event before recording a throw." : "Choose an event to view its throws.");
     }
+    await loadEventAthletes();
     await loadExistingThrows();
   });
 

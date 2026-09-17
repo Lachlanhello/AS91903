@@ -78,6 +78,17 @@
         </div>
       </section>
 
+      <section class="card leaderboard-card field-leaderboard" aria-labelledby="mini-leaderboard-heading">
+        <h2 id="mini-leaderboard-heading">Leaderboard</h2>
+        <table id="leaderboard-table" hidden>
+          <caption class="visually-hidden">Athletes ranked by their best throw distance</caption>
+          <thead><tr><th scope="col">Rank</th><th scope="col">Athlete</th><th scope="col">Best</th><th scope="col">Tries</th><th scope="col"><span class="visually-hidden">Status</span></th></tr></thead>
+          <tbody id="leaderboard-tbody"></tbody>
+        </table>
+        <p id="leaderboard-empty" class="hint">No throws recorded yet.</p>
+        <a href="/results" class="leaderboard-link">View full leaderboard &amp; log →</a>
+      </section>
+
       <div class="field-sidebar">
         <section class="throw-panel card" aria-labelledby="throw-heading">
           <h2 id="throw-heading">Record a throw</h2>
@@ -91,7 +102,10 @@
           <form id="throw-form" novalidate>
             <div class="field-group">
               <label for="athlete-name">Athlete name</label>
-              <input type="text" id="athlete-name" name="athlete-name" autocomplete="name" placeholder="e.g. Jordan Smith">
+              <select id="athlete-name" name="athlete-name" aria-describedby="athlete-hint">
+                <option value="">Select an event first...</option>
+              </select>
+              <p id="athlete-hint" class="hint">Only athletes entered in the selected event can have throws recorded.</p>
             </div>
             <div class="field-group">
               <label for="distance-input">Throw distance (metres)</label>
@@ -109,16 +123,6 @@
           <p id="throw-result" class="throw-result scoreboard" aria-live="polite">No throw recorded yet.</p>
         </section>
 
-        <section class="card leaderboard-card" aria-labelledby="mini-leaderboard-heading">
-          <h2 id="mini-leaderboard-heading">Leaderboard</h2>
-          <table id="leaderboard-table" hidden>
-            <caption class="visually-hidden">Athletes ranked by their best throw distance</caption>
-            <thead><tr><th scope="col">Rank</th><th scope="col">Athlete</th><th scope="col">Best</th><th scope="col">Tries</th><th scope="col"><span class="visually-hidden">Status</span></th></tr></thead>
-            <tbody id="leaderboard-tbody"></tbody>
-          </table>
-          <p id="leaderboard-empty" class="hint">No throws recorded yet.</p>
-          <a href="/results" class="leaderboard-link">View full leaderboard &amp; log →</a>
-        </section>
       </div>
     </div>
   </main>
