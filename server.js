@@ -33,8 +33,76 @@ app.use(session({
   },
 }));
 
-// CSS and JS are served directly from /public, e.g. /css/style.css
+// CSS and JS are served from /public, e.g. /css/style.css and /js/app.js.
+// The project root is ALSO served as a fallback, so the site still works if
+// style.css / app.js happen to be sitting loose in the project folder rather
+// than inside public/. A 404 on the stylesheet or script is otherwise
+// completely silent in the browser and looks exactly like "the animation is
+// broken" - this makes that impossible.
+/* ---------- Resilient asset routes ----------
+   The pages ask for /js/app.js and /css/style.css. These routes serve the
+   first copy of each file that actually exists, checking both the tidy
+   public/ layout and the project root. That way a file sitting in the
+   "wrong" folder can never silently 404 - a missing script is invisible in
+   the browser and looks identical to "the animation is broken". */
+function serveFirstExisting(relativePaths, contentType) {
+  const fs = require("fs");
+  return (req, res) => {
+    for (const rel of relativePaths) {
+      const full = path.join(__dirname, rel);
+      if (fs.existsSync(full)) {
+        res.type(contentType);
+        return res.sendFile(full);
+      }
+    }
+    res.status(404).type("text/plain").send(
+      "Could not find this file in any of: " + relativePaths.join(", ")
+    );
+  };
+}
+
+app.get(["/js/app.js", "/app.js"],
+  serveFirstExisting(["public/js/app.js", "js/app.js", "app.js"], "application/javascript"));
+
+app.get(["/css/style.css", "/css/styles.css", "/style.css", "/styles.css"],
+  serveFirstExisting(["public/css/style.css", "public/css/styles.css", "css/style.css", "style.css", "styles.css"], "text/css"));
+
 app.use(express.static(path.join(__dirname, "public")));
+app.use(express.static(__dirname, { index: false }));
+
+/* ---------- Startup self-check ----------
+   Prints, at boot, whether the files the pages ask for actually exist.
+   If something is in the wrong folder you see it in the terminal
+   immediately instead of debugging a blank page in the browser. */
+function startupCheck() {
+  const fs = require("fs");
+  const checks = [
+    ["public/js/app.js",     "the field animation + leaderboard script"],
+    ["public/css/style.css", "all site styling"],
+    ["views/field.html",     "Field View page"],
+    ["views/results.html",   "Results page"],
+    ["views/index.html",     "Home page"],
+    ["views/guide.html",     "Guide page"],
+    ["views/login.html",     "Login page"],
+  ];
+  const missing = checks.filter(([rel]) => !fs.existsSync(path.join(__dirname, rel)));
+  if (missing.length === 0) {
+    console.log("File check: all pages, styles and scripts found.");
+    return;
+  }
+  console.error("");
+  console.error("*** FILE CHECK FAILED - these files are missing: ***");
+  missing.forEach(([rel, what]) => console.error(`  MISSING  ${rel}   (${what})`));
+  console.error("");
+  console.error("Your folder should look like this:");
+  console.error("  server.js");
+  console.error("  db.js");
+  console.error("  package.json");
+  console.error("  public/css/style.css");
+  console.error("  public/js/app.js");
+  console.error("  views/  index.html  field.html  results.html  guide.html  login.html");
+  console.error("");
+}
 
 const VIEWS_DIR = path.join(__dirname, "views");
 
@@ -155,11 +223,13 @@ app.use((req, res) => {
   );
 });
 
+startupCheck();
+
 const server = app.listen(PORT, () => {
   console.log(`Shot Put Field Tool running at http://localhost:${PORT}`);
   console.log("Demo accounts:");
-  console.log("  admin   / ShotPut2026!    (can record throws)");
-  console.log("  visitor / Spectator2026!  (leaderboard + results only)");
+  console.log("admin   / ShotPut2026!    (can record throws)");
+  console.log("visitor / Spectator2026!  (leaderboard + results only)");
 });
 
 server.on("error", (err) => {

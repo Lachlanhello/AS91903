@@ -57,45 +57,45 @@
         <h2 id="field-heading" class="visually-hidden">Shot put field diagram</h2>
 
         <div class="field-container">
-          <svg id="field-svg" viewBox="0 0 900 420" preserveAspectRatio="xMidYMid meet"
-               role="img" aria-labelledby="svg-title svg-desc">
-            <title id="svg-title">Shot put field diagram</title>
-            <desc id="svg-desc">
-              A green shot put field seen from above the throwing circle,
-              with distance rings at 5, 10, 15, 20 and 25 metres. Each
-              recorded throw leaves a permanent dot where it landed, and
-              the furthest throw is marked with a star. Every distance is
-              also listed as text in the leaderboard beside this diagram.
-            </desc>
+          <div class="field-overlay">
+            <svg id="fieldSvg" viewBox="0 0 900 420" preserveAspectRatio="xMidYMid meet"
+                 role="img" aria-labelledby="svg-title svg-desc">
+              <title id="svg-title">Shot put field diagram</title>
+              <desc id="svg-desc">
+                A green shot put field seen from above the throwing circle, with
+                distance rings at 5, 10, 15, 20 and 25 metres. Each recorded throw
+                leaves a permanent dot where it landed and the furthest throw is
+                marked with a star. Every distance is also listed as text in the
+                leaderboard beside this diagram.
+              </desc>
 
-            <defs>
-              <radialGradient id="ball-gradient" cx="35%" cy="30%" r="70%">
-                <stop offset="0%" stop-color="#fbf7ec" />
-                <stop offset="55%" stop-color="#aeb4ba" />
-                <stop offset="100%" stop-color="#43474b" />
-              </radialGradient>
-              <pattern id="grass-dots" width="14" height="14" patternUnits="userSpaceOnUse">
-                <rect width="14" height="14" fill="#2f7d3e" />
-                <circle cx="3" cy="3" r="1" fill="rgba(255,255,255,0.10)" />
-                <circle cx="10" cy="10" r="1" fill="rgba(255,255,255,0.07)" />
-              </pattern>
-            </defs>
+              <defs>
+                <radialGradient id="ballGradient" cx="35%" cy="30%" r="70%">
+                  <stop offset="0%" stop-color="#ffefc2" />
+                  <stop offset="55%" stop-color="#ffb347" />
+                  <stop offset="100%" stop-color="#c97400" />
+                </radialGradient>
+                <pattern id="grassDots" width="14" height="14" patternUnits="userSpaceOnUse">
+                  <circle cx="2" cy="2" r="1" fill="rgba(255,255,255,0.07)" />
+                  <circle cx="9" cy="9" r="1" fill="rgba(255,255,255,0.05)" />
+                </pattern>
+              </defs>
 
-            <!-- Built at runtime by buildField() in app.js, so the field
-                 graphic and the throw maths always agree on exactly where
-                 each distance sits. -->
-            <g id="field-graphic"></g>
+              <!-- Built at runtime by buildField() in app.js, so the field graphic
+                   and the throw maths always agree on exactly where each distance sits. -->
+              <g id="fieldGraphic"></g>
 
-            <!-- A permanent marker for every throw ever recorded -->
-            <g id="markers-layer"></g>
+              <!-- A permanent marker for every throw -->
+              <g id="markersLayer"></g>
 
-            <!-- The flying shot: trail, shadow, then the ball on top -->
-            <g id="flight-layer">
-              <line id="trail-line" />
-              <ellipse id="shot-shadow" rx="7" ry="3.5" />
-              <circle id="shot-ball" r="9" fill="url(#ball-gradient)" />
-            </g>
-          </svg>
+              <!-- The flying shot: trail, shadow, and ball -->
+              <g id="flightLayer">
+                <line id="trailLine" />
+                <ellipse id="shotShadow" rx="7" ry="3.5" />
+                <circle id="shotBall" r="9" fill="url(#ballGradient)" />
+              </g>
+            </svg>
+          </div>
         </div>
       </section>
 

@@ -15,65 +15,40 @@
   ],
   "athletes": [
     {
-      "id": 1,
-      "name": "Jordan Smith"
+      "id": 6,
+      "name": "Lachlan McCurdy"
     },
     {
-      "id": 2,
-      "name": "Amelia Ngata"
-    },
-    {
-      "id": 3,
-      "name": "Kai Walker"
+      "id": 7,
+      "name": "Arth patel"
     }
   ],
   "throws": [
     {
-      "id": 1,
-      "athleteId": 1,
-      "distance": 14.2,
-      "recordedAt": "2026-09-10T23:42:54.369Z",
+      "id": 12,
+      "athleteId": 6,
+      "distance": 14.95,
+      "recordedAt": "2026-09-16T23:46:56.875Z",
       "recordedBy": "admin"
     },
     {
-      "id": 2,
-      "athleteId": 1,
-      "distance": 15.85,
-      "recordedAt": "2026-09-10T23:42:54.369Z",
+      "id": 13,
+      "athleteId": 6,
+      "distance": 14.6,
+      "recordedAt": "2026-09-16T23:50:38.499Z",
       "recordedBy": "admin"
     },
     {
-      "id": 3,
-      "athleteId": 2,
-      "distance": 16.5,
-      "recordedAt": "2026-09-10T23:42:54.369Z",
-      "recordedBy": "admin"
-    },
-    {
-      "id": 4,
-      "athleteId": 2,
-      "distance": 17.05,
-      "recordedAt": "2026-09-10T23:42:54.369Z",
-      "recordedBy": "admin"
-    },
-    {
-      "id": 5,
-      "athleteId": 2,
-      "distance": 16.1,
-      "recordedAt": "2026-09-10T23:42:54.369Z",
-      "recordedBy": "admin"
-    },
-    {
-      "id": 6,
-      "athleteId": 3,
-      "distance": 13.1,
-      "recordedAt": "2026-09-10T23:42:54.369Z",
+      "id": 14,
+      "athleteId": 7,
+      "distance": 5.06,
+      "recordedAt": "2026-09-17T00:00:40.047Z",
       "recordedBy": "admin"
     }
   ],
   "nextId": {
     "users": 3,
-    "athletes": 4,
-    "throws": 7
+    "athletes": 8,
+    "throws": 15
   }
 }

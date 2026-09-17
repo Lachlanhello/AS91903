@@ -142,7 +142,13 @@ function buildLeaderboard(throws) {
 
   return Array.from(byAthlete.values())
     .map((e) => ({ ...e, average: e.total / e.attempts }))
-    .sort((a, b) => b.best - a.best); // highest best throw first
+    .sort((a, b) => {
+      // Ranking is by distance only: highest best throw first, with no
+      // name-based ordering sneaking in when two athletes tie on distance.
+      if (b.best !== a.best) return b.best - a.best;
+      if (b.average !== a.average) return b.average - a.average;
+      return b.attempts - a.attempts;
+    });
 }
 
 // A small pill used for "Leading" / "Personal best" - text, never
@@ -241,7 +247,7 @@ function ringPath(distanceMetres) {
 }
 
 // Draws the turf, apron, sector lines, distance rings and the
-// throwing circle into the <g id="field-graphic"> placeholder.
+// throwing circle into the <g id="fieldGraphic"> placeholder.
 function buildField(graphic) {
   graphic.innerHTML = "";
 
@@ -249,7 +255,7 @@ function buildField(graphic) {
   graphic.appendChild(svgEl("rect", { class: "apron", x: 0, y: 0, width: FIELD.originX + 45, height: VIEW_H }));
 
   // Sector boundary lines, extended past the last ring.
-  const edgeR = FIELD.maxRadius + 100;
+  const edgeR = FIELD.maxRadius + 130;
   [-FIELD.halfAngleDeg, FIELD.halfAngleDeg].forEach((angle) => {
     const p = pointAtRadius(edgeR, angle);
     graphic.appendChild(svgEl("line", {
@@ -289,7 +295,7 @@ function buildField(graphic) {
   graphic.appendChild(startLabel);
 
   graphic.appendChild(svgEl("rect", {
-    class: "field-border", x: 3, y: 3, width: VIEW_W - 6, height: VIEW_H - 6, rx: 10,
+    class: "field-border", x: 3, y: 3, width: VIEW_W - 6, height: VIEW_H - 6, rx: 6,
   }));
 }
 
@@ -314,12 +320,12 @@ function initFieldView() {
   const motionNoteEl = document.getElementById("motion-note");
   const throwButton = form.querySelector('button[type="submit"]');
 
-  const fieldGraphic = document.getElementById("field-graphic");
-  const markersLayer = document.getElementById("markers-layer");
-  const flightLayer = document.getElementById("flight-layer");
-  const shotBall = document.getElementById("shot-ball");
-  const shotShadow = document.getElementById("shot-shadow");
-  const trailLine = document.getElementById("trail-line");
+  const fieldGraphic = document.getElementById("fieldGraphic");
+  const markersLayer = document.getElementById("markersLayer");
+  const flightLayer = document.getElementById("flightLayer");
+  const shotBall = document.getElementById("shotBall");
+  const shotShadow = document.getElementById("shotShadow");
+  const trailLine = document.getElementById("trailLine");
 
   const leaderboardTbody = document.getElementById("leaderboard-tbody");
   const leaderboardTable = document.getElementById("leaderboard-table");
@@ -544,7 +550,8 @@ function initFieldView() {
       // throw that wasn't actually recorded.
       const saved = await apiAddThrow(name, distance);
       console.log("[shotput] saved to server:", saved);
-      setAthleteNameHint(name);
+      setAthleteNameHint("");
+      nameInput.value = "";
 
       const record = { ...saved, angle: randomAngle() };
       throws.push(record);

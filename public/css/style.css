@@ -323,6 +323,18 @@ main {
 .btn-secondary { background: transparent; border-color: var(--color-border); color: var(--color-ink); }
 .btn-secondary:hover { border-color: var(--color-error); color: var(--color-error); }
 
+.logout-btn {
+  background: var(--color-clay);
+  border-color: var(--color-clay);
+  color: #fff;
+  box-shadow: 0 6px 16px -8px rgba(193, 84, 28, 0.75);
+}
+.logout-btn:hover {
+  background: var(--color-clay-text);
+  border-color: var(--color-clay-text);
+  color: #fff;
+}
+
 .btn-ghost-inverse { background: transparent; border-color: rgba(242, 239, 228, 0.4); color: #f2efe4; }
 .btn-ghost-inverse:hover { border-color: var(--color-led); color: var(--color-led); }
 
@@ -332,6 +344,7 @@ main {
 label { display: block; font-weight: 700; margin-bottom: 0.35rem; }
 
 input[type="text"],
+input[type="password"],
 input[type="number"] {
   width: 100%;
   font-family: var(--font-body);
@@ -343,7 +356,9 @@ input[type="number"] {
   color: var(--color-ink);
   transition: border-color 0.12s ease;
 }
-input[type="text"]:hover, input[type="number"]:hover { border-color: var(--color-turf); }
+input[type="text"]:hover,
+input[type="password"]:hover,
+input[type="number"]:hover { border-color: var(--color-turf); }
 
 input[aria-invalid="true"] { border-color: var(--color-error); background: var(--color-error-bg); }
 
@@ -544,26 +559,27 @@ tr.is-best td { font-weight: 700; }
    ========================================================= */
 
 .field-container {
-  position: relative;
-  width: 100%;
-  border-radius: 14px;
+  background: #4b8637;
+  border-radius: 20px;
   overflow: hidden;
-  border: 1px solid var(--color-border);
-  background: var(--color-turf);
-  /* padding-bottom keeps the 900x420 ratio on every browser,
-     including older ones that don't support aspect-ratio. */
-  height: 0;
-  padding-bottom: 46.6%;
-  min-height: 300px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  position: relative;
+  aspect-ratio: 900 / 420;
+  min-height: 260px;
 }
-#field-svg {
+.field-overlay {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+#fieldSvg {
   display: block;
-  position: absolute;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
+  width: 100%;
+  height: 100%;
 }
 
-.grass { fill: url(#grass-dots); }
+.grass { fill: url(#grassDots); }
+.grass-base { fill: #4b8637; }
 .apron { fill: var(--color-apron, #8a4a2e); }
 .field-border { fill: none; stroke: rgba(255,255,255,0.35); stroke-width: 3; }
 
@@ -594,15 +610,15 @@ tr.is-best td { font-weight: 700; }
 
 /* ---------- The flying shot ---------- */
 
-#flight-layer { transition: opacity 0.3s ease; }
-#trail-line {
+#flightLayer { transition: opacity 0.3s ease; }
+#trailLine {
   stroke: rgba(255,255,255,0.65);
   stroke-width: 2;
   stroke-linecap: round;
   stroke-dasharray: 5 6;
 }
-#shot-shadow { fill: rgba(0,0,0,0.4); }
-#shot-ball { stroke: rgba(20,26,20,0.35); stroke-width: 1; }
+#shotShadow { fill: rgba(0,0,0,0.4); }
+#shotBall { stroke: rgba(20,26,20,0.35); stroke-width: 1; }
 
 /* ---------- Landing markers: one per throw, kept permanently ---------- */
 
@@ -645,5 +661,11 @@ tr.is-best td { font-weight: 700; }
 @media (prefers-reduced-motion: reduce) {
   .throw-marker.is-newest .marker-dot { animation: none; }
   .landing-pulse { animation: none; opacity: 0; }
-  #flight-layer { transition: none; }
+  #flightLayer { transition: none; }
 }
+
+
+/* The hidden attribute must always win - the leaderboard and log tables are
+   toggled with it, and a stray display rule silently breaking that would look
+   exactly like "the leaderboard doesn't work". */
+[hidden] { display: none !important; }

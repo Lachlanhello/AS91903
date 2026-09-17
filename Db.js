@@ -54,11 +54,7 @@ function seedDatabase(data) {
     { id: visitorId, username: "visitor", passwordHash: bcrypt.hashSync("Spectator2026!", 10), role: "visitor" }
   );
 
-  const demoThrows = [
-    ["Jordan Smith", 14.20], ["Jordan Smith", 15.85],
-    ["Amelia Ngata", 16.50], ["Amelia Ngata", 17.05], ["Amelia Ngata", 16.10],
-    ["Kai Walker", 13.10],
-  ];
+  
   const athleteIdByName = {};
   demoThrows.forEach(([name, distance]) => {
     if (!athleteIdByName[name]) {
