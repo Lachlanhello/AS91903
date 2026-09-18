@@ -820,19 +820,58 @@ function initResultsView() {
   const summaryCurrent = document.getElementById("summary-current");
   const summaryBest = document.getElementById("summary-best");
   const clearBtn = document.getElementById("clear-throws");
+  const filtersForm = document.getElementById("results-filters");
+  const ageFilter = document.getElementById("filter-age-group");
+  const eventFilter = document.getElementById("filter-event");
+  const representingFilter = document.getElementById("filter-representing");
+  const athleteFilter = document.getElementById("filter-athlete");
+  const filterStatus = document.getElementById("filter-status");
+  let allThrows = [];
 
-  async function render() {
-    let throws = [];
-    try {
-      throws = await apiGetThrows();
-    } catch (err) {
-      console.error("[shotput] could not load throws:", err);
-      showFatalErrorBanner("Could not load throws: " + err.message);
-      return;
-    }
+  function addFilterOptions(select, values, labelForValue) {
+    if (!select) return;
+    const uniqueValues = Array.from(new Set(values.filter(Boolean)))
+      .sort((a, b) => labelForValue(a).localeCompare(labelForValue(b)));
+    uniqueValues.forEach((value) => {
+      const option = document.createElement("option");
+      option.value = value;
+      option.textContent = labelForValue(value);
+      select.appendChild(option);
+    });
+  }
 
+  function populateFilters() {
+    addFilterOptions(ageFilter, allThrows.map((t) => t.ageGroup), ageGroupLabel);
+    addFilterOptions(eventFilter, allThrows.map((t) => String(t.eventId || "")), (value) => {
+      const throwRecord = allThrows.find((t) => String(t.eventId || "") === value);
+      return throwRecord ? throwRecord.eventName : "Unassigned";
+    });
+    addFilterOptions(representingFilter, allThrows.map((t) => t.representing), (value) => value);
+  }
+
+  function getFilteredThrows() {
+    const ageGroup = ageFilter ? ageFilter.value : "";
+    const eventId = eventFilter ? eventFilter.value : "";
+    const representing = representingFilter ? representingFilter.value : "";
+    const athleteQuery = athleteFilter ? athleteFilter.value.trim().toLowerCase() : "";
+
+    return allThrows.filter((t) => {
+      return (!ageGroup || t.ageGroup === ageGroup) &&
+        (!eventId || String(t.eventId || "") === eventId) &&
+        (!representing || t.representing === representing) &&
+        (!athleteQuery || t.athleteName.toLowerCase().includes(athleteQuery));
+    });
+  }
+
+  function renderFilteredResults(throws) {
     const board = buildLeaderboard(throws);
     const overallBest = board.length ? board[0] : null;
+    const hasFilters = Boolean(
+      (ageFilter && ageFilter.value) ||
+      (eventFilter && eventFilter.value) ||
+      (representingFilter && representingFilter.value) ||
+      (athleteFilter && athleteFilter.value.trim())
+    );
 
     if (summaryAthletes) summaryAthletes.textContent = String(board.length);
     if (summaryCount) summaryCount.textContent = String(throws.length);
@@ -847,6 +886,18 @@ function initResultsView() {
         : "—";
     }
 
+    if (filterStatus) {
+      filterStatus.textContent = hasFilters
+        ? "Showing " + throws.length + " of " + allThrows.length + " throws."
+        : allThrows.length + " throws recorded.";
+    }
+
+    if (leaderboardEmpty) {
+      leaderboardEmpty.textContent = allThrows.length && hasFilters
+        ? "No throws match the selected filters."
+        : "No throws recorded yet. Go to Field View to record the first one.";
+    }
+
     renderLeaderboardTable(leaderboardTbody, leaderboardTable, leaderboardEmpty, throws);
 
     // Full chronological log - every single attempt, nothing dropped.
@@ -854,6 +905,9 @@ function initResultsView() {
     if (throws.length === 0) {
       if (throwTable) throwTable.hidden = true;
       if (emptyState) emptyState.hidden = false;
+      if (emptyState) emptyState.textContent = allThrows.length
+        ? "No throws match the selected filters."
+        : "No throws recorded yet.";
       return;
     }
     if (throwTable) throwTable.hidden = false;
@@ -883,12 +937,32 @@ function initResultsView() {
     });
   }
 
+  async function render() {
+    try {
+      allThrows = await apiGetThrows();
+      populateFilters();
+      renderFilteredResults(getFilteredThrows());
+    } catch (err) {
+      console.error("[shotput] could not load throws:", err);
+      showFatalErrorBanner("Could not load throws: " + err.message);
+    }
+  }
+
+  [ageFilter, eventFilter, representingFilter].forEach((filter) => {
+    if (filter) filter.addEventListener("change", () => renderFilteredResults(getFilteredThrows()));
+  });
+  if (athleteFilter) athleteFilter.addEventListener("input", () => renderFilteredResults(getFilteredThrows()));
+  if (filtersForm) filtersForm.addEventListener("reset", () => {
+    window.requestAnimationFrame(() => renderFilteredResults(getFilteredThrows()));
+  });
+
   if (clearBtn) {
     clearBtn.addEventListener("click", async () => {
       if (!window.confirm("Clear all recorded throws? This cannot be undone.")) return;
       try {
         await apiClearThrows();
-        render();
+        allThrows = [];
+        renderFilteredResults([]);
       } catch (err) {
         console.error("[shotput] could not clear throws:", err);
         window.alert(err.message || "Could not clear throws.");
@@ -1249,7 +1323,7 @@ function initEventsView() {
           const remove = document.createElement("button");
           remove.type = "button";
           remove.className = "btn btn-secondary btn-small";
-          remove.textContent = "Remove";
+          remove.textContent = "Remove athlete";
           remove.setAttribute("aria-label", "Remove " + entry.athleteName + " from " + event.name);
           remove.addEventListener("click", async () => {
             if (!window.confirm("Remove " + entry.athleteName + " from " + event.name + "?")) return;

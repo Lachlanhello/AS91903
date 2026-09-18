@@ -79,6 +79,33 @@
     <section class="card leaderboard-card" aria-labelledby="leaderboard-heading">
       <h2 id="leaderboard-heading">Leaderboard</h2>
 
+      <form id="results-filters" class="results-filters" aria-label="Filter results">
+        <div class="filter-field">
+          <label for="filter-age-group">Age group</label>
+          <select id="filter-age-group">
+            <option value="">All age groups</option>
+          </select>
+        </div>
+        <div class="filter-field">
+          <label for="filter-event">Event</label>
+          <select id="filter-event">
+            <option value="">All events</option>
+          </select>
+        </div>
+        <div class="filter-field">
+          <label for="filter-representing">School or club</label>
+          <select id="filter-representing">
+            <option value="">All schools and clubs</option>
+          </select>
+        </div>
+        <div class="filter-field">
+          <label for="filter-athlete">Athlete</label>
+          <input id="filter-athlete" type="search" placeholder="Search by name">
+        </div>
+        <button id="clear-filters" type="reset" class="btn btn-secondary">Clear filters</button>
+      </form>
+      <p id="filter-status" class="hint" aria-live="polite"></p>
+
       <table id="leaderboard-table" hidden>
         <caption class="visually-hidden">Athletes ranked by their best throw distance</caption>
         <thead>

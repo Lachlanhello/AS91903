@@ -147,6 +147,7 @@ function getAllThrows() {
         id: t.id,
         athleteName,
         ageGroup: matchingEntry ? matchingEntry.ageGroup : null,
+        representing: matchingEntry ? matchingEntry.representing : null,
         eventId: t.eventId || null,
         eventName: eventNameById[t.eventId] || "Unassigned",
         distance: t.distance,

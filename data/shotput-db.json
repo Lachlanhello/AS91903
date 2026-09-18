@@ -15,99 +15,213 @@
   ],
   "athletes": [
     {
-      "id": 6,
+      "id": 10,
       "name": "Lachlan McCurdy"
     },
     {
-      "id": 7,
-      "name": "Arth patel"
+      "id": 11,
+      "name": "john pork"
     },
     {
-      "id": 8,
-      "name": "Lachlan"
+      "id": 12,
+      "name": "Arth Patel"
+    },
+    {
+      "id": 13,
+      "name": "Tobin Schleifer"
+    },
+    {
+      "id": 14,
+      "name": "Brian Blackie"
+    },
+    {
+      "id": 15,
+      "name": "Sam Stringer"
+    },
+    {
+      "id": 16,
+      "name": "Jack Barton"
+    },
+    {
+      "id": 17,
+      "name": "Charlie Edge"
+    },
+    {
+      "id": 18,
+      "name": "grant stuart"
     }
   ],
   "throws": [
     {
-      "id": 12,
-      "athleteId": 6,
+      "id": 22,
+      "athleteId": 10,
+      "eventId": 2,
       "distance": 14.95,
-      "recordedAt": "2026-09-16T23:46:56.875Z",
+      "recordedAt": "2026-09-17T23:18:30.808Z",
       "recordedBy": "admin"
     },
     {
-      "id": 13,
-      "athleteId": 6,
-      "distance": 14.6,
-      "recordedAt": "2026-09-16T23:50:38.499Z",
+      "id": 23,
+      "athleteId": 11,
+      "eventId": 2,
+      "distance": 12.55,
+      "recordedAt": "2026-09-17T23:18:38.962Z",
       "recordedBy": "admin"
     },
     {
-      "id": 14,
-      "athleteId": 7,
+      "id": 24,
+      "athleteId": 12,
+      "eventId": 2,
       "distance": 5.06,
-      "recordedAt": "2026-09-17T00:00:40.047Z",
+      "recordedAt": "2026-09-17T23:18:47.806Z",
       "recordedBy": "admin"
     },
     {
-      "id": 15,
-      "athleteId": 8,
-      "eventId": 1,
-      "distance": 14.95,
-      "recordedAt": "2026-09-17T22:27:36.059Z",
+      "id": 25,
+      "athleteId": 13,
+      "eventId": 2,
+      "distance": 10.5,
+      "recordedAt": "2026-09-17T23:45:27.771Z",
       "recordedBy": "admin"
     },
     {
-      "id": 16,
-      "athleteId": 8,
-      "eventId": 1,
-      "distance": 14.51,
-      "recordedAt": "2026-09-17T22:27:54.716Z",
+      "id": 26,
+      "athleteId": 14,
+      "eventId": 2,
+      "distance": 3.45,
+      "recordedAt": "2026-09-17T23:45:36.275Z",
       "recordedBy": "admin"
     },
     {
-      "id": 17,
-      "athleteId": 7,
-      "eventId": 1,
-      "distance": 5.01,
-      "recordedAt": "2026-09-17T22:28:14.545Z",
+      "id": 27,
+      "athleteId": 15,
+      "eventId": 2,
+      "distance": 9.95,
+      "recordedAt": "2026-09-17T23:45:42.565Z",
       "recordedBy": "admin"
     },
     {
-      "id": 18,
-      "athleteId": 6,
-      "eventId": 1,
-      "distance": 14.96,
-      "recordedAt": "2026-09-17T22:36:13.865Z",
+      "id": 28,
+      "athleteId": 16,
+      "eventId": 2,
+      "distance": 11.87,
+      "recordedAt": "2026-09-17T23:45:52.574Z",
+      "recordedBy": "admin"
+    },
+    {
+      "id": 29,
+      "athleteId": 17,
+      "eventId": 2,
+      "distance": 6.97,
+      "recordedAt": "2026-09-17T23:46:08.131Z",
+      "recordedBy": "admin"
+    },
+    {
+      "id": 30,
+      "athleteId": 12,
+      "eventId": 2,
+      "distance": 1.07,
+      "recordedAt": "2026-09-18T02:40:50.117Z",
+      "recordedBy": "admin"
+    },
+    {
+      "id": 31,
+      "athleteId": 18,
+      "eventId": 2,
+      "distance": 5.4,
+      "recordedAt": "2026-09-18T02:44:11.492Z",
       "recordedBy": "admin"
     }
   ],
   "nextId": {
     "users": 3,
-    "athletes": 9,
-    "throws": 19,
-    "events": 2,
-    "entries": 2
+    "athletes": 19,
+    "throws": 32,
+    "events": 3,
+    "entries": 12
   },
   "events": [
     {
-      "id": 1,
-      "name": "Nationals secondary schools shotput",
-      "eventDate": "2026-09-19",
+      "id": 2,
+      "name": "National secondary schools shotput",
+      "eventDate": "2026-09-18",
       "status": "open",
       "createdBy": "admin",
-      "createdAt": "2026-09-17T22:15:34.874Z"
+      "createdAt": "2026-09-17T22:47:07.461Z"
     }
   ],
   "entries": [
     {
-      "id": 1,
-      "eventId": 1,
+      "id": 2,
+      "eventId": 2,
       "athleteName": "Lachlan McCurdy",
       "ageGroup": "senior",
       "representing": "Rathkeale",
       "enteredBy": "visitor",
-      "enteredAt": "2026-09-17T22:16:37.577Z"
+      "enteredAt": "2026-09-17T22:47:56.652Z"
+    },
+    {
+      "id": 3,
+      "eventId": 2,
+      "athleteName": "john pork",
+      "ageGroup": "senior",
+      "representing": "goon high school",
+      "enteredBy": "visitor",
+      "enteredAt": "2026-09-17T22:48:19.973Z"
+    },
+    {
+      "id": 4,
+      "eventId": 2,
+      "athleteName": "Arth Patel",
+      "ageGroup": "senior",
+      "representing": "Rathkeale",
+      "enteredBy": "visitor",
+      "enteredAt": "2026-09-17T23:10:16.131Z"
+    },
+    {
+      "id": 5,
+      "eventId": 2,
+      "athleteName": "Tobin Schleifer",
+      "ageGroup": "senior",
+      "representing": "Rathkeale",
+      "enteredBy": "visitor",
+      "enteredAt": "2026-09-17T23:28:24.074Z"
+    },
+    {
+      "id": 7,
+      "eventId": 2,
+      "athleteName": "Sam Stringer",
+      "ageGroup": "senior",
+      "representing": "Rathkeale",
+      "enteredBy": "visitor",
+      "enteredAt": "2026-09-17T23:31:19.203Z"
+    },
+    {
+      "id": 9,
+      "eventId": 2,
+      "athleteName": "Jack Barton",
+      "ageGroup": "senior",
+      "representing": "Rathkeale",
+      "enteredBy": "visitor",
+      "enteredAt": "2026-09-17T23:35:51.796Z"
+    },
+    {
+      "id": 10,
+      "eventId": 2,
+      "athleteName": "Charlie Edge",
+      "ageGroup": "senior",
+      "representing": "Rathkeale",
+      "enteredBy": "visitor",
+      "enteredAt": "2026-09-17T23:36:33.313Z"
+    },
+    {
+      "id": 11,
+      "eventId": 2,
+      "athleteName": "grant stuart",
+      "ageGroup": "junior",
+      "representing": "Rathkeale",
+      "enteredBy": "visitor",
+      "enteredAt": "2026-09-18T02:43:37.566Z"
     }
   ]
 }
